@@ -1,0 +1,108 @@
+/**
+ * Created by DELL on 2017/6/26.
+ */
+
+/**
+ * 系统用户
+ */
+db['sys_user'].belongsToMany(db['sys_role'], { as: 'role', through: db['sys_role_user'], foreignKey: 'userid', otherKey: 'roleid'});
+db['sys_user'].belongsTo(db['sys_depart'], {foreignKey: 'departid'});
+db['sys_user'].hasMany(db['sys_role_user'],{foreignKey:'userid',targetKey:'id'});
+
+/**
+ * 系统角色
+ */
+db['sys_role'].hasMany(db['sys_role_menu'],{foreignKey:'roleid',targetKey:'id'});
+db['sys_role'].hasMany(db['sys_role_user'],{foreignKey:'roleid',targetKey:'id'});
+db['sys_role'].belongsToMany(db['sys_user'], { as: 'user', through: db['sys_role_user'], foreignKey: 'roleid', otherKey: 'userid'});
+db['sys_role'].belongsToMany(db['sys_menu'], { as: 'menu', through: db['sys_role_menu'], foreignKey: 'roleid', otherKey: 'menuid'});
+
+/**
+ * 系统部门
+ */
+db['sys_depart'].hasMany(db['sys_user'],{foreignKey:'departid',targetKey:'id'});
+
+/**
+ * 字典
+ */
+db['sys_type_group'].hasMany(db['sys_type'],{foreignKey:'typegroupid',targetKey:'id'});
+
+/**
+ * 系统菜单
+ */
+db['sys_menu'].hasMany(db['sys_role_menu'],{foreignKey:'menuid',targetKey:'id'});
+db['sys_menu'].belongsToMany(db['sys_role'], { as: 'role', through: db['sys_role_menu'], foreignKey: 'menuid', otherKey: 'roleid'});
+
+/**
+ * 警员组织机构
+ */
+db['pl_org'].hasMany(db['pl_person'],{foreignKey:'pl_orgid',targetKey:'id'});
+
+/**
+ * 警员角色
+ */
+db['pl_role'].belongsToMany(db['pl_person'], { as: 'police', through: db['pl_role_police'], foreignKey: 'roleid', otherKey: 'policeid'});
+db['pl_role'].hasMany(db['pl_role_police'],{foreignKey:'roleid',targetKey:'id'});
+
+/**
+ * 警员
+ */
+
+db['pl_person'].hasOne(db['pl_role_police'],{foreignKey:'policeid',targetKey:'id'});
+db['pl_person'].belongsTo(db['pl_org'],{foreignKey:'pl_orgid'});
+db['pl_person'].belongsTo(db['atd_group'],{foreignKey:'atd_groupid'});
+db['pl_person'].hasOne(db['sys_annex'],{foreignKey:'businesskey',targetKey:'id'});
+db['pl_person'].hasMany(db['atd_punch_record'], {foreignKey: 'policeid',targetKey:'id'});
+db['pl_person'].hasMany(db['pl_location_record'], {foreignKey: 'policeid',targetKey:'id'});
+
+
+/**
+ * 班次
+ */
+db['atd_schedule'].hasMany(db['atd_schedule_group'], {foreignKey: 'scheduleid',targetKey:'id'});
+db['atd_schedule'].belongsToMany(db['atd_group'], { as: 'atdGroup', through: db['atd_schedule_group'], foreignKey: 'scheduleid', otherKey: 'groupid'});
+
+/**
+ * 考勤地址
+ */
+db['atd_address'].hasMany(db['atd_address_group'], {foreignKey: 'addressid',targetKey:'id'});
+db['atd_address'].belongsToMany(db['atd_group'], { as: 'atdGroup', through: db['atd_address_group'], foreignKey: 'addressid', otherKey: 'groupid'});
+
+
+/**
+ * 考勤组
+ */
+db['atd_group'].hasMany(db['atd_schedule_group'], {foreignKey: 'groupid'});
+db['atd_group'].hasMany(db['pl_person'], {foreignKey: 'atd_groupid'});
+db['atd_group'].hasMany(db['atd_address_group'], {foreignKey: 'groupid'});
+db['atd_group'].belongsToMany(db['atd_schedule'], { as: 'scheduleRole', through: db['atd_schedule_group'], foreignKey: 'groupid', otherKey: 'scheduleid'});
+db['atd_group'].belongsToMany(db['atd_address'], { as: 'addressRole', through: db['atd_address_group'], foreignKey: 'groupid', otherKey: 'addressid'});
+
+/**
+ * 考勤记录表
+ */
+db['atd_punch_record'].belongsTo(db['pl_person'], {foreignKey: 'policeid'});
+db['atd_punch_record'].belongsTo(db['atd_group'], {foreignKey: 'groupid'});
+
+/**
+ * 人员位置流水
+ */
+db['pl_location_record'].belongsTo(db['pl_person'], {foreignKey: 'policeid'});
+
+/**
+ * 中间表反向关联
+ */
+db['pl_role_police'].belongsTo(db['pl_role'],{foreignKey:'roleid'});
+db['pl_role_police'].belongsTo(db['pl_person'],{foreignKey:'policeid'});
+
+db['sys_role_user'].belongsTo(db['sys_user'],{foreignKey:'userid'});
+db['sys_role_user'].belongsTo(db['sys_role'],{foreignKey:'roleid'});
+
+db['sys_role_menu'].belongsTo(db['sys_menu'],{foreignKey:'menuid'});
+db['sys_role_menu'].belongsTo(db['sys_role'],{foreignKey:'roleid'});
+
+db['atd_schedule_group'].belongsTo(db['atd_group'], {foreignKey: 'groupid'});
+db['atd_schedule_group'].belongsTo(db['atd_schedule'], {foreignKey: 'scheduleid'});
+
+db['atd_address_group'].belongsTo(db['atd_address'], {foreignKey: 'addressid'});
+db['atd_address_group'].belongsTo(db['atd_group'], {foreignKey: 'groupd'});

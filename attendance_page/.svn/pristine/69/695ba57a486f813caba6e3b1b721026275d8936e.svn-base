@@ -1,0 +1,352 @@
+<template>
+  <div>
+    <!--查询-->
+    <el-form :inline="true" :model="formInline" class="demo-form-inline" ref="formInline">
+      <el-form-item label="审批名称" prop="approver">
+        <el-input v-model="formInline.approver" placeholder="审批人"></el-input>
+      </el-form-item>
+      <el-form-item>
+        <el-button size="mini" type="primary" icon="search" @click="onSearch('formInline')">查询</el-button>
+        <el-button size="mini" type="info" @click="resetForm('formInline')">
+          <icon name="refresh" class="custom-icon"></icon>
+          重置
+        </el-button>
+        <el-button size="mini" type="danger" icon="delete" @click="batchRemove">批量删除</el-button>
+        <!--<el-button type="success" icon="plus" @click="handleAdd">新增</el-button>-->
+
+
+      </el-form-item>
+    </el-form>
+
+    <!--表格-->
+    <el-table
+      :data="approveListData"
+      border
+      :height="this.$store.state.gTableHeight"
+      v-loading="tableLoading"
+      @selection-change="handleSelectionChange"
+      style="width: 100%">
+      <el-table-column
+        type="selection"
+        width="45"
+      >
+      </el-table-column>
+      <el-table-column
+        prop="approver"
+        label="审批人"
+      >
+      </el-table-column>
+      <el-table-column
+        prop="content"
+        label="审核内容">
+      </el-table-column>
+      <el-table-column
+        prop="send_person"
+        label="抄送人">
+      </el-table-column>
+      <el-table-column
+        prop="review_date"
+        label="审核日期">
+
+      </el-table-column>
+      <el-table-column
+        prop="approval_status"
+        label="审核状态">
+
+      </el-table-column>
+      <el-table-column
+        prop="remarks"
+        label="备注">
+
+      </el-table-column>
+
+
+      <el-table-column label="操作" width="210">
+        <template scope="scope">
+          <!--<el-button-->
+            <!--size="small"-->
+            <!--@click="handleEdit(scope.$index, scope.row)">编辑-->
+          <!--</el-button>-->
+
+          <el-button
+            size="small"
+            type="danger"
+            @click="handleDelete(scope.$index, scope.row)">删除
+          </el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <paging @emitsizechange="handleSizeChange"
+            @emitcurrentchange="handleCurrentChange"
+            :currentPage="tabPage.currentPage"
+            :pageSizes="tabPage.pageSizes"
+            :pageSize="tabPage.pageSize"
+            :total="tabPage.totalNum"
+    >
+
+    </paging>
+    <!--dialog-->
+    <el-dialog v-bind:title="formTitle" v-model="dialogEdit" :close-on-click-modal="false"
+               :close-on-press-escape="false"
+               v-on:close="resetForm('ruleForm')" style="width:100%">
+
+
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="dialogEdit=false">取 消</el-button>
+        <el-button type="primary" @click="submitForm('ruleForm')">确 定</el-button>
+      </div>
+    </el-dialog>
+
+
+  </div>
+</template>
+<script>
+  import detailForm from '../../common/detailForm.vue';
+  import paging from '../../common/Paging.vue';
+  import {dateFormat} from '../../../assets/js/date'
+
+  export default {
+    data() {
+      return {
+        status: true,
+        approveListData: [{
+          approver: '',
+          content: '',
+          send_person: '',
+          review_date: '',
+          approval_status:'',
+          remarks: ''
+
+        }], //审批列表列表数组
+        sels: [], //表格选中列
+        tabPage: {
+          currentPage: 1,
+          pageSize: 10,
+          pageSizes: [10, 20, 30, 50]
+        }, //分页信息
+        formInline: { //查询表单对象
+          approver: '',
+        },
+        dialogEdit: false,//编辑模态
+        dialogInfo: false, //详情模态框是否显示标识
+        formTitle: '',//新增编辑模态框title
+
+        tableLoading: false,
+
+        detailArr: [],//详情数组
+        zw: [],//职位数组
+        grgz: [],//工人工种数组
+        image: {},//图片流预览图片
+        btnShow: false,//图片移除按钮是否显示
+        ServerimageUrl: 'api/',//后台地址
+
+
+      }
+    },
+    created: function () {
+      this.getReviewRecord();
+    },
+    mounted: function () {
+      this.zw = this.getDicData('zw');
+      this.grgz = this.getDicData('grgz');
+    },
+    components: {
+      detailForm, paging
+    },
+    computed: {},
+    methods: {
+      getDicData(str){//获取数据字典相关内容
+        var dicList = JSON.parse(this.$getStore("gDictionaryList"))
+        var filterarray = $.grep(dicList, function (value) {
+          return value.typegroupcode === str;//筛选出其中一个，仍为一个数组
+        });
+        if (filterarray.length > 0) {//防止前端报错
+          return filterarray[0].typeList;
+        }
+      },
+      //性别显示转换
+      formatSex: function (row, column) {
+        return row.gender == "男" ? '男' : row.gender == "女" ? '女' : '未知';
+      },
+      formatStatus: function (row, column) {
+        return row.status == "0" ? '禁用' : row.status == "1" ? '1' : '启用';
+      },
+      chooseImg(){
+        $('input[type=file]').trigger('click');
+        return false
+      },
+
+      /**
+       *
+       * 移动端提交审批申请以后会产生一条审批记录，数据保存在审批记录里，
+       * 同时要把这条审批申请发送给审批人和抄送人，审批人审批通过还是拒绝后的信息更新数据库里审批记录的状态
+       * 审批通过还是拒绝信息要发送给移动端，
+       *
+       */
+      async getReviewRecord() {
+        this.tableLoading = true;
+        var vm = this
+        var data = {
+          page: this.tabPage.currentPage,
+          pageSize: this.tabPage.pageSize,
+          approver: this.formInline.approver
+        };
+        var params = data
+        this.$http.get('/business/approve/approverecord', {
+          params: data
+        }).then(function (res) {
+          console.log(res)
+          if (res.data && res.data.success) {
+            var d = res.data.result
+            for (var i = 0;i<d.rows.length;i++){
+                d.rows[i].review_date = dateFormat(new Date(d.rows[i].review_date),'yyyy-MM-dd')
+            }
+            vm.approveListData = d.rows
+            vm.tabPage.totalNum = d.count
+          }
+          vm.tableLoading = false;
+        })
+          .catch(function (error) {
+            console.log(error)
+          });
+      },
+
+      /**
+       * 查询 根据用户名模糊查询
+       * @params {String} formName 进行验证
+       */
+      onSearch(formName) {
+        var params = this.formInline;
+        params.page = 1;
+        params.pageSize = this.tabPage.pageSize;
+        this.tabPage.currentPage = 1;//每次查询默认第一页
+        var _self = this;
+        _self.$refs[formName].validate((valid) => {
+          if (valid) {
+            _self.getReviewRecord(params);
+          } else {
+            return console.log('提交错误');
+          }
+        });
+      },
+      /**
+       * 点击新增按钮
+       */
+      handleAdd() {
+        var userData = JSON.parse(this.$getStore('userData'));
+        console.log(userData);
+        var params = {
+          create_user: userData.user_name
+        };
+        return
+      },
+
+
+      /**
+       * 表单重置
+       * @params {Object} formName 表单名称
+       */
+      resetForm(formName) {
+        this.$refs[formName].resetFields();
+        if (formName == 'formInline') {
+          this.getReviewRecord()
+        }
+      },
+      /**
+       * 编辑按钮点击事件
+       * @params {Number} index  行号
+       * @params {Object} row 行对象
+       */
+      handleEdit(index, row) {
+     return
+      },
+      /**
+       * 删除按钮点击事件
+       * @params {Number} index   行号
+       * @params {Object} row     行对象
+       */
+      handleDelete(index, row) {
+        var vm = this
+        vm.delApproveRecord(row);
+      },
+      /**
+       * 批量删除操作
+       */
+      batchRemove(){
+        var vm = this;
+        var arr = vm.sels;
+        if (arr.length > 0) {
+          vm.delApproveRecord({params: arr});
+        } else {
+          vm.$message({
+            message: '请勾选审批信息',
+            type: 'warning'
+          });
+        }
+      },
+      /**
+       * 删除审批信息
+       * @params {Object} row|rows     行对象
+       */
+      delApproveRecord(data) {
+        var vm = this;
+        var params = data
+        this.$confirm('此操作将永久删除该模版信息, 是否继续?', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          vm.$http.post('/business/approve/delapproverecord', params).then(function (res) {
+            console.log(res);
+            if (res.data && res.data.success) {
+              vm.$message({
+                message:'删除成功',
+                type: 'success'
+              })
+              vm.getReviewRecord();
+            }
+          }).catch(function (err) {
+            console.log(err);
+          })
+        }).catch(() => {
+
+        });
+      },
+      /**
+       * 切换每页条数
+       * @params {Number} val 每页条数
+       */
+      handleSizeChange(val) {
+        this.tabPage.pageSize = val;
+        this.getReviewRecord();
+      },
+      /**
+       * 切换页码
+       * @params {Number} val 页码
+       */
+      handleCurrentChange(val) {
+        this.tabPage.currentPage = val;
+        this.getReviewRecord();
+      },
+      /**
+       * 多选框改变选中事件
+       * @params {Array} val 当前所有选中行对象数组
+       */
+      handleSelectionChange(val) {
+        this.multipleSelection = val;
+        this.sels = val;
+      },
+
+
+      closeDetail(msg){
+        this.dialogInfo = msg;
+      },
+
+    }
+  }
+</script>
+<style>
+
+</style>
+

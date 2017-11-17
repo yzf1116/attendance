@@ -1,0 +1,49 @@
+var uploadMulter = require('../../../utils/uploadMulter');
+var upload = uploadMulter();//如果不传路径参数，路径默认为图片路径public/upload/image,传入参数可以指定其他路径。
+/**
+ *
+ * ('文件类型：%s', req.file.mimetype);
+ * ('原始文件名：%s', req.file.originalname);
+ * ('文件大小：%s', req.file.size);
+ * ('文件保存路径：%s', req.file.path);
+ *
+ */
+module.exports = {
+    get_index: function (req, res) {
+        res.render('home/index', {}); //测试页面
+    },
+    // 表单（不带文件上传，不带： enctype="multipart/form-data"）
+    post_form1: function (req, res) {
+        res.json(req.body);
+    },
+    // 表单（不带文件上传，带： enctype="multipart/form-data"）：
+    post_form2: [upload.array(), function (req, res) {
+        res.json(req.body);
+    }],
+    // 表单（带单个文件上传，带： enctype="multipart/form-data"）：
+    post_form3: [upload.single('file'), function (req, res) {
+        res.send("文件：" + JSON.stringify(req.file) + "<br />表单" + JSON.stringify(req.body));
+    }],
+    // 表单（带多个文件上传，带： enctype="multipart/form-data"）：
+    //upload.array(‘file’,num), //适用于多文件上传，num为最多上传个数，上传文件的数量可以小于num,
+    post_form4: [upload.array('file'), function (req, res) {
+        res.send("文件：" + JSON.stringify(req.files) + "<br />表单" + JSON.stringify(req.body))
+    }],
+    // 表单（带多个文件上传，上传表单名称 不一样(file1,file2,...)，带： enctype="multipart/form-data"）：
+    post_form5: [upload.fields([{name: "file1"}, {name: "file2"}]), function (req, res) {
+        res.send("文件：" + JSON.stringify(req.files) + "<br />表单" + JSON.stringify(req.body))
+    }],
+    //带错误处理的写法
+    post_form6: function (req, res) {
+        var uploadHandle = upload.single('file1') //file1 前端标签input type='file'的name名称
+        uploadHandle(req, res, function (err) {
+            if (err) {
+                //错误处理
+                console.log(err)
+            }
+            console.log(err)
+            res.send("文件：" + JSON.stringify(req.file) + "<br />表单" + JSON.stringify(req.body))
+        })
+
+    }
+};

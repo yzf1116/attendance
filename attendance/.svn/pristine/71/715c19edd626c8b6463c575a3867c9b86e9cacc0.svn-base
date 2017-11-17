@@ -1,0 +1,57 @@
+/**
+ * Created by Jessi on 2017/7/10.
+ */
+const AjaxJson = require('../../../utils/AjaxJson');
+const ReviewService = require('../../../service/api/ReviewService');
+
+
+module.exports = {
+    post_gettemplist:function(req,res){//获取审批模板列表
+        ReviewService.getTempList(req.body,function(ret){
+            res.send(ret);
+        })
+    },
+    post_gettempbyid:function(req,res){//根据模板类型获取审批模板
+        // req.body = {
+        //     policeid:'',
+        //     templateid:''
+        // };
+        const aj = new AjaxJson();
+        if(req.body&&Object.keys(req.body).length>0){
+            if(req.body.policeid){
+                ReviewService.getTempById(req.body,function(ret){
+                    res.send(ret);
+                })
+            }else{
+                aj.success = false;
+                aj.msg = "参数错误";
+                res.send(aj);
+            }
+        }else{
+            aj.msg = "没有相关参数";
+            res.send(aj);
+        }
+    },
+    post_saveapplyrecord:function(req,res){//保存请假记录
+        const aj = new AjaxJson();
+        if(req.body&&Object.keys(req.body).length>0){
+            ReviewService.saveApplyRecord(req.body,function(ret){
+                res.send(ret);
+            })
+        }else{
+            aj.msg = "没有相关参数";
+            res.send(aj);
+        }
+    },
+    post_savefillcard:function (req,res) {
+        const aj = new AjaxJson();
+        if(req.body&&Object.keys(req.body).length>0){
+            ReviewService.saveFillCard(req.body,function(ret){
+                res.send(ret);
+            })
+        }else{
+            aj.msg = "没有相关参数";
+            res.send(aj);
+        }
+    }
+};

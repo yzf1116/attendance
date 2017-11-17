@@ -1,0 +1,177 @@
+<template>
+    <div>
+  <el-dialog  v-model="dialogEdit" :close-on-click-modal="true" :close-on-press-escape="true"
+               v-on:close="resetForm('ruleForm')">
+      <el-form    label-width="100px"
+      >
+
+
+        <el-form-item label="头像" style="width:30%">
+          <div @click='chooseImg' >
+
+            <input id="upload_img" type="file" name="file1" @change="onFileChange" class="input_file" accept="image/gif,image/jpeg,image/jpg,image/png"/>
+          </div>
+
+        </el-form-item>
+
+        <el-form-item>
+          <div style="float: right">
+            <el-button size="mini" @click="dialogEdit=false">取 消</el-button>
+            <el-button size="mini" type="primary" @click="submitForm('ruleForm')">确 定</el-button>
+          </div>
+        </el-form-item>
+      </el-form>
+
+    </el-dialog>
+
+    </div>
+</template>
+<script>
+  import paging from '../common/Paging.vue';
+  import {dateFormat} from 'assets/js/date.js'
+
+  export default {
+    data() {
+
+      return {
+        pickerOptions0: {
+          disabledDate(time) {
+            return time.getTime() < Date.now() - 8.64e7;
+          }
+        },
+        dialogEdit:true,
+        value1:'',
+        formInline:{
+          startDate:'',
+          endDate:'',
+          range:''
+        },
+        ruleForm:[],
+        tableData: [],
+        cols: [
+            {prop: 'pl_person.police_name', label: '警员姓名',children:[]},
+            {prop: 'pl_org.org_name', label: '组织机构',children:[]},
+            {prop: 'pl_person.code', label: '工号',children:[]},
+            {prop: 'pl_person.pl_role_polouse.pl_role.role_name', label: '职位',children:[]},
+
+            {prop: 'record_date', label: '考勤日期',children:[]},
+            {prop: 'to_time', label: '上班时间',children:[],format:this.dtformatFun},
+            {prop: 'of_time', label: '下班时间',children:[],format:this.dtformatFun},
+            {prop: 'status', label: '考勤状态',children:[]},
+        ],
+        tabPage: {
+            currentPage: 1,
+            pageSize: 10,
+            pageSizes: [10, 20, 30, 50]
+        },//分页信息
+        rules: {//验证规则
+
+        },
+      };
+    },
+    components: {
+        paging
+    },
+    mounted:function(){
+      //this.changePsd();
+     // this.personalInfo();
+    },
+    methods: {
+        changePsd:function(){
+            var params = {
+                policeid:'b9c62430-62c1-11e7-80a5-6dafa303cf67',
+                oldPsd:'321',
+                newPsd:'123',
+            };
+            this.$http.post('/api/person/changepsd',params).then(res =>{
+                console.log(res);
+            }).catch(err =>{
+                console.log('err')
+            })
+        },
+        personalInfo:function(){
+            var params = {
+                policeid:'b9c62430-62c1-11e7-80a5-6dafa303cf67',
+            };
+            this.$http.get('/api/person/personalinfo',{params:params}).then(res =>{
+                console.log(res);
+            }).catch(err =>{
+                console.log('err')
+            })
+        },
+        submitForm(){
+        var _self = this
+
+        var formData = new FormData()
+        var file = document.getElementById("upload_img").files[0]
+
+
+        formData.append('file', file) //file就是图片或者文件
+
+       formData.append('policeid','d2f84e00-6565-11e7-b409-05ecbbcc3b66')
+
+        _self.$http.post('/api/person/uploadavatar', formData).then(function (res) {
+         console.log(res);
+        }).catch(function (err) {
+          console.log(err);
+        })
+        },
+          chooseImg(){
+        $('input[type=file]').trigger('click')
+        return false
+      },
+      /**
+       * 图片选择change事件
+       *
+       */
+      onFileChange(e){
+        var _self = this
+        var files = e.target.files || e.dataTransfer.files
+        const isImg = files[0].type.substr(0, 5)
+        const isLt2M = files[0].size / 1024 / 1024 < 2
+        if (isImg != 'image') {
+          this.$message.error('只能上传图片！')
+        }
+        if (!isLt2M) {
+          this.$message.error('上传图片大小不能超过2M！')
+        }
+        if (isImg === 'image' && isLt2M) {
+          if (!files.length) return
+          this.createImage(files)
+        }
+        return isImg === 'image' && isLt2M
+
+      },
+      createImage(files){
+
+        var vm = this
+//        var reader = null
+//        reader = new window.FileReader()
+//        reader.readAsDataURL(files[0])
+//        console.log(reader.readAsDataURL(files[0]))
+//        reader.onload = function(e){
+//              vm.image = {src: e.target.result}
+//        }
+        for (let file of files) {
+          let reader = new FileReader();
+          reader.onload = function (e) {
+            // Render thumbnail.
+            vm.image = {src: e.target.result}
+          };
+          // Read in the image file as a data URL.
+          reader.readAsDataURL(file);
+
+        }
+      },
+      removeImg(){
+        $('#upload_img').val('')
+        this.image = {}
+      },
+    }
+  };
+</script>
+<style scoped>
+  .excelBtn{
+    margin:-10px 0 10px 0;
+  }
+</style>

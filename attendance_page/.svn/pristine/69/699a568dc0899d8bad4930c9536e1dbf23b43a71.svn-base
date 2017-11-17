@@ -1,0 +1,326 @@
+<template>
+  <div>
+    <el-form v-model="formInline" class="demo-form-inline" ref="formInline" label-position="right" label-width="100px"
+             @keyup.enter.native="onSearch('formInline')">
+      <el-form-item label="考勤组名称:" prop="org_name">
+        <el-input v-model="formInline.atd_name" placeholder="请输入考勤组名称" style="width: 200px"></el-input>
+      </el-form-item>
+      <el-form-item label="参与考勤人员:">
+        <div class="tagclass">
+          <el-tag type="primary">标签三</el-tag>
+          <el-tag type="primary">标签三</el-tag>
+          <el-tag type="primary">标签三</el-tag>
+          <el-tag type="primary">标签三</el-tag>
+        </div>
+      </el-form-item>
+      <el-form-item label="无需考勤人员:">
+        <el-button>请选择</el-button>
+      </el-form-item>
+      <el-form-item label="考勤组负责人:">
+        <el-button>请选择</el-button>
+        <p class="infoColor">协助管理员分管本考勤组的排班及统计</p>
+      </el-form-item>
+      <el-form-item label="考勤类型:">
+        <el-radio-group v-model="atdTypeRadio">
+          <el-radio class="radio" v-model="atdTypeRadio" label="1">固定班制 (每天考勤时间一样)</el-radio>
+          <el-radio class="radio" v-model="atdTypeRadio" label="2">排班制 (自定义设置考勤时间)</el-radio>
+          <el-radio class="radio" v-model="atdTypeRadio" label="3">自由工时（不设置班次，随时打卡）</el-radio>
+        </el-radio-group>
+      </el-form-item>
+      <el-form-item label="工作日设置:">
+        <span>快捷设置班次</span>
+        <span>休息(选择某一班次)</span>
+        <el-button type="text">更改班次</el-button>
+        <el-table
+          :data="tableData"
+          style="width: 60%">
+          <el-table-column
+            type="selection"
+            width="55">
+          </el-table-column>
+          <el-table-column
+            prop="date"
+            label="工作日"
+            width="100">
+          </el-table-column>
+          <el-table-column
+            prop="name"
+            label="班次时间段"
+            width="300">
+          </el-table-column>
+          <el-table-column
+            label="操作">
+            <template scope="scope">
+              <el-button
+                size="small"
+                type="text"
+                @click="handleEdit(scope.$index, scope.row)">更改班次
+
+
+
+
+
+
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-form-item>
+
+      <el-form-item label="特殊日期(固定排班):">
+        <div>
+          <el-button> 添加</el-button>
+          <span class="infoColor">必须打卡的日期</span>
+          <el-table
+            :data="needTableData"
+            style="width: 60%">
+            <el-table-column
+              prop="date"
+              label="日期"
+              width="120">
+            </el-table-column>
+            <el-table-column
+              prop="time"
+              label="考勤时间"
+              width="300">
+            </el-table-column>
+            <el-table-column
+              prop="address"
+              label="操作">
+              <template scope="scope">
+                <el-button
+                  size="small"
+                  type="text"
+                  @click="handleEdit(scope.$index, scope.row)">编辑
+
+
+
+
+
+                </el-button>
+                <el-button
+                  size="small"
+                  type="text"
+                  @click="handleEdit(scope.$index, scope.row)">删除
+
+
+
+
+
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+        <div>
+          <el-button> 添加</el-button>
+          <span class="infoColor">不用打卡的日期</span>
+          <el-table
+            :data="noTableData"
+            style="width: 60%">
+            <el-table-column
+              prop="date"
+              label="日期"
+              width="120">
+            </el-table-column>
+            <el-table-column
+              prop="time"
+              label="考勤时间"
+              width="300">
+            </el-table-column>
+            <el-table-column
+              prop="address"
+              label="操作">
+              <template scope="scope">
+                <el-button
+                  size="small"
+                  type="text"
+                  @click="handleEdit(scope.$index, scope.row)">编辑
+
+
+
+
+
+                </el-button>
+                <el-button
+                  size="small"
+                  type="text"
+                  @click="handleEdit(scope.$index, scope.row)">删除
+
+
+
+
+
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+
+      </el-form-item>
+      <el-form-item label="考勤班次(排班制):">
+        <div class="tagclass">
+          <el-tag type="primary">班次白班A 07:40-17:00</el-tag>
+          <el-tag type="success">班次网运排班	09:00-17:30</el-tag>
+          <el-tag type="warning">班次联诚科技 09:00-18:00</el-tag>
+          <el-tag type="danger">班次警示中心 08:30-17:30</el-tag>
+        </div>
+      </el-form-item>
+      <el-form-item label="考勤方式:">
+        <span>根据办公地点考勤（可添加多个考勤地点）</span> <span>有效范围</span>
+        <el-select v-model="value" placeholder="请选择" size="small" style="width: 100px;">
+          <el-option
+            v-for="item in options"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value">
+          </el-option>
+        </el-select>
+        <el-table
+          :data="atdWayTableData"
+          style="width: 60%">
+          <el-table-column
+            label="考勤地址"
+          >
+            <template scope="scope">
+              <p style="font-weight: 600">{{scope.row.name}}</p>
+              <p>{{scope.row.address}}</p>
+            </template>
+          </el-table-column>
+          <el-table-column
+            width="100"
+            label="操作">
+            <template scope="scope">
+              <el-button
+                size="small"
+                type="text"
+                @click="handleEdit(scope.$index, scope.row)">删除
+
+
+
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <div>
+          <el-button type="text">添加考勤地点</el-button>
+          （查询地点的经纬度请使用高德地图查看）
+
+        </div>
+
+      </el-form-item>
+      <el-button type="info" style="margin: 0 auto">保存设置</el-button>
+    </el-form>
+  </div>
+</template>
+
+<script>
+  import ElButton from "../../../../node_modules/element-ui/packages/button/src/button";
+  export default {
+    data() {
+      return {
+        tableData: [{
+          date: '周一',
+          name: '休息',
+        }, {
+          date: '周二',
+          name: '休息',
+        }, {
+          date: '周三',
+          name: '休息',
+        }, {
+          date: '周四',
+          name: '休息',
+        },
+          {
+            date: '周五',
+            name: '休息',
+          },
+          {
+            date: '周六',
+            name: '休息',
+          },
+          {
+            date: '周日',
+            name: '休息',
+          }],
+        needTableData: [{
+          date: '2016-12-23',
+          time: '班次白班A：07:40-17:00'
+        }, {
+          date: '2016-12-22',
+          time: '班次白班A：07:40-17:00'
+        }],
+        noTableData: [
+          {
+            date: '2016-12-23',
+            time: '休息'
+          }, {
+            date: '2016-12-22',
+            time: '休息'
+          }
+        ],
+        options: [{
+          value: '1',
+          label: '100米'
+        }, {
+          value: '2',
+          label: '200米'
+        }, {
+          value: '3',
+          label: '300米'
+        }, {
+          value: '4',
+          label: '400米'
+        }, {
+          value: '5',
+          label: '500米'
+        }],
+        atdWayTableData: [{
+          name: '霖岚国际广场',
+          address: '云南省昆明市盘龙区东华街道霖岚国际广场'
+        }, {
+          name: '郑州国贸360广场',
+          address: '河南省郑州市金水区文化路街道郑州国贸中心A座郑州国贸360广场'
+        }],
+        value: '',
+        atdTypeRadio: '',
+        formInline: {}
+      }
+    },
+    methods: {},
+    components: {ElButton},
+    created() {
+      console.log('created')
+    },
+    mounted() {
+      console.log('mounted')
+    },
+    updated() {
+      console.log('updated')
+    },
+  }
+</script>
+
+<!-- 添加 "scoped " css作用域只作用于本文件，不作用全局-->
+<style scoped>
+  .tagclass {
+    border-radius: 4px;
+    border: 1px solid #bfcbd9;
+    padding: 0 5px;
+    width: 60%;
+    max-height: 100px;
+    overflow: auto;
+  }
+
+  .radio {
+    display: block;
+    margin-left: 0px;
+    padding: 10px;
+  }
+
+  .infoColor {
+    color: rgba(73, 88, 107, 0.65)
+  }
+</style>

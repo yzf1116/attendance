@@ -1,0 +1,10 @@
+/**
+ * Created by DELL on 2017/7/5.
+ */
+const sqls = {
+    //登录获取人员信息
+    getPersonSql: function (personId) {
+        return `SELECT per.id,per.police_name,per.phone,anx.realpath,ro.role_name,ro.role_level,atgup.atd_name FROM pl_person per LEFT JOIN pl_role_police per_ro on per.id=per_ro.policeid LEFT JOIN pl_role ro on per_ro.roleid=ro.id LEFT JOIN atd_group atgup on per.atd_groupid=atgup.id LEFT JOIN sys_annex anx on per.id = anx.businesskey WHERE per.id='${personId}'`
+    }
+}
+module.exports = sqls;

@@ -1,0 +1,254 @@
+/**
+ * Created by Jessi on 2017/7/6.
+ * 移动端考勤相关API
+ */
+
+const CommonService = require('../../service/common/CommonServiceTest');
+const uuid = require('node-uuid');
+const atdSql = require('../../service/common/sqls/AttendanceSql');
+// const moment = require('moment')
+const dateUtils = require('../../utils/dateUtils');
+const schePlanModel = db['atd_schedule_plan'];
+const scheModel = db['atd_schedule'];
+const atdGroupModel = db['atd_group'];
+const punchRecordModel = db['atd_punch_record'];
+
+
+class AttendanceService extends CommonService {
+    constructor(params) {
+        super(params);
+        this.params = params;//参数集对象
+        this.currentDate = new Date().Format('yyyy-MM-dd');//当前天
+    }
+
+    async punchCard(workType) {//workType为1，标识上班，workType为2，标识下班。
+        var atdType = this.params.atd_type;
+        if (atdType) {
+            if (workType == 1) {
+                switch (atdType) {
+                    case '1':
+                        return await this.toWeekWork();
+                    case '2':
+                        return await this.toEveryWork();
+                    case '3':
+                        return await this.toFreeWork();
+                }
+
+            } else {
+                switch (atdType) {
+                    case '1':
+                        return await this.ofWeekWork();
+                    case '2':
+                        return await this.ofEveryWork();
+                    case '3':
+                        return await this.ofFreeWork();
+                }
+            }
+        }
+
+    }
+
+    //按周排班考勤判定
+    async toWeekWork(workType) {
+        var {policeid, atd_groupid, punch_time, removing}=this.params;
+        try {
+
+            var week = dateUtils.nowFewWeeks(new Date());
+            var result = await schePlanModel.findOne( //返回当天的排班计划
+                {
+                    where: {atd_groupid: atd_groupid, week_calendar: week},
+                    include: [{model: scheModel, attributes: ['work_time', 'off_work_time']}]
+                });
+            if (!result) {
+                return false;
+
+            } else {
+                var queryInfo = await atdGroupModel.findById(atd_groupid, {attributes: ['range', 'late_minutes', 'forth_hours']});
+
+                const range = queryInfo.range;  //考勤有效范围
+
+                const workTime = new Date(`${this.currentDate} ${result['atd_schedule'].work_time}`).getTime();//规定上班时间
+
+                const punchTime = new Date(punch_time).getTime(); //移动端打卡时间
+
+                const lateTime = workTime + Number(queryInfo.late_minutes) * 60000; //上班打卡截止时间
+
+                const forthTime = workTime - Number(queryInfo.forth_hours) * 3600000; //提前打卡的开始时间
+
+                /**
+                 *判断考勤状态
+                 */
+                var status = '';
+                var msg = '';
+                var kqzt = global.dictionary;
+
+                if (Number(removing) > range) {
+                    // workStatus = '外勤';
+                    status = kqzt[3].name;
+                } else {
+                    if (punchTime < forthTime) {
+                        // return msg = `打卡时间应在上班时间提前${queryInfo.forth_hours}个小时以后进行`;
+                        return false;
+
+                    } else if (punchTime > workTime && punchTime < lateTime) {
+
+                        // workStatus = '迟到';
+                        status = kqzt[1].name
+                    } else if (punchTime > lateTime) {
+                        console.error(punchTime, lateTime)
+
+                        // workStatus = '缺卡';
+                        status = kqzt[2].name
+                    } else {
+                        // workStatus = '正常'
+                        status = kqzt[0].name
+                    }
+                }
+                console.error('status=' + status);
+                var values = {
+                    id: uuid.v1(),
+                    policeid: policeid,
+                    work_time: punchTime,
+                    work_status: status,
+                    record_date: this.currentDate
+                };
+
+                var created = await punchRecordModel.upsert(values);
+                if (!created) {
+                    return null
+                } else {
+                    return status
+                }
+            }
+
+        } catch (e) {
+            console.error(e);
+            return {error: e};
+        }
+
+
+    }
+
+
+    //排班制，每天的排班都一样
+    toEveryWork() {
+        //每日
+    }
+
+    //自由工时，可以随时打卡
+    toFreeWork() {
+    }
+
+    async ofWeekWork() {
+        const {policeid, atd_groupid, punch_time, removing} = this.params;
+        var week = dateUtils.nowFewWeeks(new Date());
+        var result = await schePlanModel.findOne( //返回当天排班
+            {
+                where: {atd_groupid: atd_groupid, week_calendar: week},
+                include: [{model: scheModel, attributes: ['work_time', 'off_work_time']}]
+            });
+        if (!result) {
+            return false;
+
+        } else {
+            var queryInfo = await atdGroupModel.findById(atd_groupid, {attributes: ['range', 'late_minutes', 'forth_hours']});
+
+            const range = queryInfo.range;  //考勤有效范围
+
+            const offWorkTime = new Date(`${this.currentDate} ${result['atd_schedule'].off_work_time}`).getTime();//规定下班时间
+
+            const punchTime = new Date(punch_time).getTime(); //移动端打卡时间
+
+            /**
+             *判断考勤状态
+             */
+            var status = '';
+            var kqzt = global.dictionary;//载入考勤字典信息
+
+            if (Number(removing) > range) {
+                // status = '外勤';
+                status = kqzt[3].name;
+            } else if (punchTime < offWorkTime) {
+                // status = '早退';
+                status = kqzt[4].name;
+            } else if (punchTime > offWorkTime) {
+
+
+            }
+            // else {
+            //     if (punchTime < offWorkTime) {
+            //         //status ='早退'
+            //         status = kqzt[4].name;
+            //     } else if (punchTime > workTime && punchTime < lateTime) {
+            //
+            //         // status = '迟到';
+            //         status = kqzt[1].name
+            //     } else if (punchTime > lateTime) {
+            //         console.error(punchTime, lateTime)
+            //
+            //         // status = '缺卡';
+            //         status = kqzt[2].name
+            //     } else {
+            //         // status = '正常'
+            //         status = kqzt[0].name
+            //     }
+            // }
+            console.error('status=' + status);
+            var values = {
+                id: uuid.v1(),
+                policeid: policeid,
+                work_time: punchTime,
+                work_status: status,
+                record_date: this.currentDate
+            };
+
+            var created = await punchRecordModel.upsert(values);
+            if (!created) {
+                return null
+            } else {
+                return status
+            }
+        }
+    }
+
+    ofEveryWork() {
+    }
+
+    ofFreeWork() {
+    }
+
+    //查询考勤地址与班次信息
+    async queryScheAddress() {
+        try {
+            const atdGroupid = this.params.atd_groupid;
+
+            const addressSql = atdSql.getAddressSql(atdGroupid);
+            const scheduleSql = atdSql.getScheduleSql(atdGroupid);
+
+            const addressInfo = await db.sequelize.query(addressSql);
+            const scheduleInfo = await db.sequelize.query(scheduleSql);
+            var result = {
+                scheduleInfo: scheduleInfo[0],
+                addressInfo: addressInfo[0]
+            };
+            return result;
+        } catch (err) {
+            return {error: err};
+
+        }
+
+
+    }
+
+
+}
+
+
+// exports.ofPunchCard = async function (params, callback) {
+//     var {policeid, of_time} = params;
+//
+//     const isComplete = await punchRecordModel.create();
+//
+//
+// };
+module.exports = AttendanceService;

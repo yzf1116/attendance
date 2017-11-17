@@ -1,0 +1,423 @@
+<template>
+  <div>
+    <!--查询-->
+    <el-form :inline="true" :model="formInline" class="demo-form-inline" ref="formInline">
+      <el-form-item label="审批名称" prop="template_name">
+        <el-input v-model="formInline.template_name" placeholder="审批名称"></el-input>
+      </el-form-item>
+      <el-form-item>
+        <el-button size="mini" type="primary" icon="search" @click="onSearch('formInline')">查询</el-button>
+        <el-button size="mini" type="info" @click="resetForm('formInline')">
+          <icon name="refresh" class="custom-icon"></icon>
+          重置
+        </el-button>
+        <el-button size="mini" type="success" icon="plus" @click="handleAdd">新增</el-button>
+        <el-button size="mini" type="danger" icon="delete" @click="batchRemove">批量删除</el-button>
+
+
+      </el-form-item>
+    </el-form>
+
+    <!--表格-->
+    <el-table
+      :data="approveTableData"
+      border
+      :height="this.$store.state.gTableHeight"
+      v-loading="tableLoading"
+      @selection-change="handleSelectionChange"
+      style="width: 100%">
+      <el-table-column
+        type="selection"
+        width="45"
+      >
+      </el-table-column>
+      <el-table-column
+        prop="template_name"
+        label="审批名称"
+      >
+      </el-table-column>
+      <el-table-column
+        prop="create_user"
+        label="创建人">
+      </el-table-column>
+      <el-table-column
+        prop="create_date"
+        label="创建时间">
+      </el-table-column>
+      <el-table-column
+        label="是否启用"
+      >
+
+        <template scope="scope">
+          <el-switch
+            v-model="scope.row.is_use"
+            on-text="是"
+            off-text="否"
+            on-value="1"
+            off-value="0"
+            @change="handleisEnable(scope.$index, scope.row)"
+          >
+          </el-switch>
+        </template>
+
+      </el-table-column>
+
+
+      <el-table-column label="操作" width="210">
+        <template scope="scope">
+          <!--<el-button-->
+            <!--size="mini"-->
+            <!--type="primary"-->
+            <!--@click="handleEdit(scope.$index, scope.row)">编辑-->
+          <!--</el-button>-->
+          <el-button
+            size="mini"
+            type="primary"
+            @click="handleSet(scope.$index, scope.row)">设置
+          </el-button>
+
+          <el-button
+            size="mini"
+            type="danger"
+            @click="handleDelete(scope.$index, scope.row)">删除
+          </el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <paging @emitsizechange="handleSizeChange"
+            @emitcurrentchange="handleCurrentChange"
+            :currentPage="tabPage.currentPage"
+            :pageSizes="tabPage.pageSizes"
+            :pageSize="tabPage.pageSize"
+            :total="tabPage.totalNum"
+    >
+
+    </paging>
+    <!--dialog-->
+    <el-dialog v-bind:title="formTitle" v-model="dialogEdit" :close-on-click-modal="false"
+               :close-on-press-escape="false"
+               v-on:close="resetForm('ruleForm')" style="width:100%">
+
+      <el-form :model="ruleForm" :rules="this.$validateRule" ref="ruleForm" label-width="100px">
+        <el-form-item label="审批人" prop="police_name">
+          <el-input size="small" v-model="ruleForm.approveName"></el-input>
+        </el-form-item>
+
+        <el-form-item label="抄送人" prop="cardid">
+          <el-input size="small" v-model="ruleForm.copyName"></el-input>
+        </el-form-item>
+
+      </el-form>
+
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="dialogEdit=false">取 消</el-button>
+        <el-button type="primary" @click="submitForm('ruleForm')">确 定</el-button>
+      </div>
+    </el-dialog>
+
+
+  </div>
+</template>
+<script>
+  import detailForm from '../../common/detailForm.vue';
+  import paging     from '../../common/Paging.vue';
+  import ElButton   from "../../../../node_modules/element-ui/packages/button/src/button";
+  import ElForm     from "../../../../node_modules/element-ui/packages/form/src/form";
+
+  export default {
+    data() {
+      return {
+        status: true,
+        approveTableData: [{
+          template_name: '',
+          create_user: '',
+          create_date: '',
+          is_use: null
+
+        }], //审批列表列表数组
+        sels: [], //表格选中列
+        tabPage: {
+          currentPage: 1,
+          pageSize: 10,
+          pageSizes: [10, 20, 30, 50]
+        }, //分页信息
+        formInline: { //查询表单对象
+          template_name: '',
+        },
+        dialogEdit: false,//编辑模态
+        dialogInfo: false, //详情模态框是否显示标识
+        formTitle: '',//新增编辑模态框title
+
+        tableLoading: false,
+
+        detailArr: [],//详情数组
+        zw: [],//职位数组
+        grgz: [],//工人工种数组
+        image: {},//图片流预览图片
+        btnShow: false,//图片移除按钮是否显示
+        ServerimageUrl: 'api/',//后台地址
+        ruleForm: {
+          approveName: '',
+          copyName: ''
+
+        }
+      }
+    },
+    created: function () {
+      this.getSysTemplateList();
+    },
+    mounted: function () {
+      this.zw = this.getDicData('zw');
+      this.grgz = this.getDicData('grgz');
+    },
+    components: {
+      ElForm,
+      ElButton,
+      detailForm, paging
+    },
+    computed: {},
+    methods: {
+      getDicData(str){//获取数据字典相关内容
+        var dicList = JSON.parse(this.$getStore("gDictionaryList"))
+        var filterarray = $.grep(dicList, function (value) {
+          return value.typegroupcode === str;//筛选出其中一个，仍为一个数组
+        });
+        if (filterarray.length > 0) {//防止前端报错
+          return filterarray[0].typeList;
+        }
+      },
+      //性别显示转换
+      formatSex: function (row, column) {
+        return row.gender == "男" ? '男' : row.gender == "女" ? '女' : '未知';
+      },
+      formatStatus: function (row, column) {
+        return row.status == "0" ? '禁用' : row.status == "1" ? '1' : '启用';
+      },
+      chooseImg(){
+        $('input[type=file]').trigger('click');
+        return false
+      },
+
+      //获取模版列表数据
+      async getSysTemplateList(params) {
+        this.tableLoading = true;
+        var _self = this;
+        console.log(this.formInline)
+        var data = {
+          page: this.tabPage.currentPage,
+          pageSize: this.tabPage.pageSize,
+          template_name: this.formInline.template_name
+        };
+        if (params) {
+          data = params;
+        }
+
+        this.$http.get('/system/template/getsystemplatelist', {
+          params: data
+        }).then(function (res) {
+          console.log(res)
+          if (res.data && res.data.success) {
+            var d = res.data.result;
+            _self.approveTableData = d.rows;
+            _self.tabPage.totalNum = d.count;
+          }
+          _self.tableLoading = false;
+        }).catch(function (error) {
+            console.log(error)
+          });
+      },
+
+      /**
+       * 工作内容：审批模版的新增查询，formbuild页面的微调；
+       *          审批模版的删除，删除物理路径下的图片，包括多条模版信息的删除；
+       *          审批模版审批人和抄送人的设置；
+       *
+       */
+      /**
+       * 查询 根据用户名模糊查询
+       * @params {String} formName 进行验证
+       */
+      onSearch(formName) {
+        var params = this.formInline;
+        console.log(params)
+        params.page = 1;
+        params.pageSize = this.tabPage.pageSize;
+        this.tabPage.currentPage = 1;//每次查询默认第一页
+        var _self = this;
+        _self.$refs[formName].validate((valid) => {
+          if (valid) {
+            _self.getSysTemplateList(params);
+          } else {
+            return console.log('提交错误');
+          }
+        });
+      },
+      /**
+       * 点击新增按钮
+       */
+      handleAdd() {
+        var userData = JSON.parse(this.$getStore('userData'));
+        var TOKEN = this.$getStore('TOKEN')
+        var params = {
+          token: TOKEN,
+          userInfo: userData
+        };
+
+        console.log(params.token);
+        window.open('../../../../static/html/formBuilder.html?par=' + JSON.stringify(params));
+      },
+
+      /**
+       * 点击设置按钮
+       *
+       */
+      handleSet(index, row){
+        var vm = this
+        vm.dialogEdit = true
+
+      },
+      /**
+       * 表单重置
+       * @params {Object} formName 表单名称
+       */
+      resetForm(formName) {
+        this.$refs[formName].resetFields();
+        if (formName == 'formInline') {
+          this.getSysTemplateList()
+        }
+      },
+      /**
+       * 编辑按钮点击事件
+       * @params {Number} index  行号
+       * @params {Object} row 行对象
+       */
+      handleEdit(index, row) {
+        console.log(row);
+        var userData = JSON.parse(this.$getStore('userData'));
+
+        var params = {
+          template_name: row.template_name,
+          create_date: row.create_date,
+          create_user: row.create_user,
+          is_use: row.is_use
+        };
+
+        console.log(typeof params);
+        window.open('../../../../static/html/formBuilder.html?par=' + JSON.stringify(row));
+      },
+      /**
+       * 批量删除操作
+       */
+      batchRemove(){
+        var _self = this;
+        var arr = _self.sels;
+        if (arr.length > 0) {
+          _self.deleteTemplateInfo({params: arr});
+        } else {
+          _self.$message({
+            message: '请勾选模版',
+            type: 'warning'
+          });
+        }
+      },
+      /**
+       * 删除按钮点击事件
+       * @params {Number} index   行号
+       * @params {Object} row     行对象
+       */
+      handleDelete(index, row) {
+          console.log(row)
+        var _self = this;
+        _self.deleteTemplateInfo(row);
+      },
+      /**
+       * 删除部门信息
+       * @params {Object} row|rows     行对象
+       */
+      //是否启用按钮
+      handleisEnable(index,row){
+        var _self = this;
+        var status = row.is_use == 0 ? '1' : row.is_use == 1 ? '0' : '1';
+        var params = {
+          id: row.id,
+          is_use: status
+        }
+        this.$http.post('/system/template/edittemplate', params).then(function (res) {
+          console.log(res.data)
+          if (res.data && res.data.success) {
+            _self.$message({
+              message: '状态更新成功',
+              type: 'success'
+            });
+            //_self.getSysUserList();
+          } else {
+            _self.$message({
+              message: '状态更改失败',
+              type: 'error'
+            });
+          }
+        }).catch(function (err) {
+          console.log(err);
+          _self.$message({
+            message: '状态更改失败',
+            type: 'error'
+          });
+        })
+      },
+      //删除模版信息
+      deleteTemplateInfo(data) {
+        var _self = this;
+        this.$confirm('此操作将永久删除该模版信息, 是否继续?', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          _self.$http.post('/system/template/deletesystemplate', data).then(function (res) {
+            console.log(res);
+            if (res.data && res.data.success) {
+
+              _self.getSysTemplateList();
+            }
+          }).catch(function (err) {
+            console.log(err);
+          })
+        }).catch(() => {
+
+        });
+      },
+      /**
+       * 切换每页条数
+       * @params {Number} val 每页条数
+       */
+      handleSizeChange(val) {
+        this.tabPage.pageSize = val;
+        this.getSysTemplateList();
+      },
+      /**
+       * 切换页码
+       * @params {Number} val 页码
+       */
+      handleCurrentChange(val) {
+        this.tabPage.currentPage = val;
+        this.getSysTemplateList();
+      },
+      /**
+       * 多选框改变选中事件
+       * @params {Array} val 当前所有选中行对象数组
+       */
+      handleSelectionChange(val) {
+        this.multipleSelection = val;
+        this.sels = val;
+      },
+
+      closeDetail(msg){
+        this.dialogInfo = msg;
+      },
+
+    }
+  }
+</script>
+<style>
+
+</style>

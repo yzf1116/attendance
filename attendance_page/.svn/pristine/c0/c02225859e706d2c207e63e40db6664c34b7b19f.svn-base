@@ -1,0 +1,91 @@
+<template>
+  <div>
+    <el-form :inline="true" :model="formInline" class="demo-form-inline" ref="formInline"
+             @keyup.enter.native="onSearch('formInline')">
+      <el-form-item label="考勤组名称" prop="org_name">
+        <el-input v-model="formInline.atd_name" placeholder="考勤组名称"></el-input>
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" icon="search" @click="onSearch('formInline')">查询</el-button>
+        <el-button type="success" icon="plus" @click="handleAdd">新增</el-button>
+        <el-button type="danger" icon="delete" @click="batchRemove">批量删除</el-button>
+      </el-form-item>
+    </el-form>
+  </div>
+</template>
+
+<script>
+  export default {
+    data() {
+      return {
+        sels: [],//表格选中列
+        tabPage: {
+          currentPage: 1,
+          pageSize: 10,
+          pageSizes: [10, 20, 30, 50]
+        },//分页信息
+        loading: true,
+        formInline: {
+          atd_name: ''
+        }
+      }
+    },
+    methods: {
+      /**
+       * 查询 根据机构名称模糊查询
+       * @params {String} formName 进行验证
+       */
+      onSearch(formName){
+        var params = this.formInline;
+        params.page = 1;
+        params.pageSize = this.tabPage.pageSize;
+        this.tabPage.currentPage = 1;//每次查询默认第一页
+        var _self = this;
+        _self.$refs[formName].validate((valid) => {
+          if (valid) {
+            _self.getPlOrgList(params);
+          } else {
+            console.log('提交错误');
+          }
+        });
+      },
+      /**
+       * 点击新增按钮
+       */
+      handleAdd(){
+  console.log(this.$router.push('newAtdGroups'))
+      },
+      /**
+       * 批量删除操作
+       */
+      batchRemove(){
+        var _self = this;
+        var arr = _self.sels;
+        if (arr.length > 0) {
+          _self.deletePlOrgInfo({params: arr});
+        } else {
+          _self.$message({
+            message: '请选择部门',
+            type: 'warning'
+          });
+        }
+
+      }
+    },
+    components: {},
+    created() {
+      console.log('created')
+    },
+    mounted() {
+      console.log('mounted')
+    },
+    updated() {
+      console.log('updated')
+    },
+  }
+</script>
+
+<!-- 添加 "scoped " css作用域只作用于本文件，不作用全局-->
+<style scoped>
+
+</style>

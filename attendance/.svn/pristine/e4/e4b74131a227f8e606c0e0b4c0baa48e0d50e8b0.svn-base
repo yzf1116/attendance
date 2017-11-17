@@ -1,0 +1,27 @@
+/**
+ * 生成mode测试
+ */
+// var path = require('path');
+// var gmodels = require(path.join(__dirname,'..','utils','gmodels'));
+//
+// gmodels(function (tb,id) {
+//
+//     console.log(id);
+// })
+/**
+ * 查询测试，需启动APP.js,默认44行  解锁注释require('./test/testDB');
+ */
+// db['sys_user'].belongsTo(db['sys_depart'], {foreignKey: 'depart_id'})
+// db['sys_depart'].hasMany(db['sys_user'], {foreignKey: 'depart_id'})
+//
+//
+// db['sys_user'].findAll({include: [{model: db['sys_depart']}]}).then(function (ret) {
+//     console.log(JSON.stringify(ret));
+// });
+const perSonModel = db['pl_person'];
+const rolePoliceModel = db['pl_role_police'];
+
+perSonModel.hasMany(rolePoliceModel, {foreignKey: 'policeid', targetKey: 'id'});
+perSonModel.hasMany(rolePoliceModel);
+
+perSonModel.findOne()

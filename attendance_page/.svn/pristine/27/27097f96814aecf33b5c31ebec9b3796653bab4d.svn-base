@@ -1,0 +1,328 @@
+<template>
+  <div>
+    <el-form :inline="true" :model="formInline" class="demo-form-inline" ref="formInline"
+             @keyup.enter.native="onSearch('formInline')">
+      <el-form-item label="考勤组名称" prop="atd_name">
+        <el-input v-model="formInline.atd_name" size="mini" placeholder="考勤组名称"></el-input>
+      </el-form-item>
+      <el-form-item>
+        <el-button size="mini" type="primary" icon="search" @click="onSearch('formInline')">查询</el-button>
+        <el-button size="mini" type="info" @click="resetForm('formInline')"><icon name="refresh" class="custom-icon"></icon>重置</el-button>
+        <!--<el-button size="mini" type="danger" icon="delete" @click="batchRemove">批量删除</el-button>-->
+      </el-form-item>
+      <el-form-item style="float: right">
+        <el-button size="mini" type="success" icon="plus" @click="handleAdd">新增</el-button>
+      </el-form-item>
+    </el-form>
+
+
+    <el-table
+      :data="groupTableData"
+      border
+      v-loading="loading"
+      :height="this.$store.state.gTableHeight"
+      style="width: 100%">
+      <el-table-column
+        prop="atd_name"
+        width="150"
+        label="考勤组名称"
+        sortable>
+      </el-table-column>
+      <el-table-column
+        label="人数"
+        width="100"
+        :formatter="countFormatter"
+      >
+      </el-table-column>
+      <el-table-column
+        width="150"
+        :formatter="typeFormatter"
+        label="类型"
+      >
+      </el-table-column>
+      <el-table-column
+        :formatter="timeFormatter"
+        label="考勤时间">
+        <template scope="scope">
+          <div>
+            <el-tag type="gray" v-for="(item,index) in scope.row.atd_schedule_groups" :key="item.id"
+                    :close-transition="true"
+                    style="margin: 3px">
+              {{item.atd_schedule.name}}:{{dateFormatter(item.atd_schedule)}}
+
+            </el-tag>
+          </div>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="250">
+        <template scope="scope">
+          <el-button
+            size="mini"
+            @click="handleEdit(scope.$index, scope.row)">编辑
+
+
+          </el-button>
+          <el-button
+            size="mini"
+            type="danger"
+            @click="handleDelete(scope.$index, scope.row)">删除
+
+
+          </el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+    <paging @emitsizechange="handleSizeChange"
+            @emitcurrentchange="handleCurrentChange"
+            :currentPage="tabPage.currentPage"
+            :pageSizes="tabPage.pageSizes"
+            :pageSize="tabPage.pageSize"
+            :total="tabPage.totalNum">
+    </paging>
+  </div>
+</template>
+
+<script>
+  import moment from 'moment'
+  import paging from '../../common/Paging.vue'
+  import ElFormItem from "../../../../node_modules/element-ui/packages/form/src/form-item";
+  export default {
+    data() {
+      return {
+        groupTableData: [],
+        sels: [],//表格选中列
+        tabPage: {
+          currentPage: 1,
+          pageSize: 10,
+          pageSizes: [10, 20, 30, 50]
+        },//分页信息
+        loading: true,
+        formInline: {
+          atd_name: ''
+        }
+      }
+    },
+    methods: {
+      /**
+       * 表单重置
+       * @params {Object} formName 表单名称
+       */
+      resetForm(formName){
+        this.$refs[formName].resetFields();
+        if(formName=='formInline'){
+          this.getGroupInfo();
+        }
+      },
+
+        /**
+         *查询考勤组
+         * @param formName 表单
+         */
+      onSearch(formName){
+        var params = this.formInline;
+        params.page = 1;
+        params.pageSize = this.tabPage.pageSize;
+        this.tabPage.currentPage = 1;//每次查询默认第一页
+        var _self = this;
+        _self.getGroupInfo(params);
+
+      },
+
+      /**
+       * 编辑按钮点击事件
+       * @params {Number} index  行号
+       * @params {Object} row 行对象
+       */
+      handleEdit(index, row) {
+        this.$router.push({path: 'newAtdGroups', query: {id: row.id}})
+
+      },
+      /**
+       * 删除按钮点击事件
+       * @params {Number} index   行号
+       * @params {Object} row     行对象
+       */
+      handleDelete(index, row) {
+        var _self = this;
+        console.log(row)
+        _self.deleteGroupnfo(row);
+      },
+      /**
+       * 删除考勤组信息
+       * @params {Object} row|rows     行对象
+       */
+      deleteGroupnfo(data){
+        var _self = this;
+        this.$confirm('此操作将永久删除选择考勤组, 是否继续?', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(function () {
+          _self.$http.post('/business/attendancegroup/deletegroupinfo', data).then(function (res) {
+            if (res.data && res.data.success) {
+              _self.$message({
+                message: '删除成功',
+                type: 'success'
+              });
+                _self.getGroupInfo();
+            } else {
+              _self.$message({
+                message: res.data.msg,
+                type: 'warning'
+              });
+            }
+          }).catch(function (err) {
+            console.log(err);
+          })
+        }).catch(function (err) {
+          console.log(err);
+        });
+      },
+      /**
+       *格式化时间
+       * @param  {Object}  row
+       */
+      dateFormatter(row){
+        return moment(row.work_date).format('HH:mm') + '-' + moment(row.off_date).format('HH:mm');
+      },
+
+      /**
+       * 考勤时间
+       * @param {Object}  row
+       */
+      timeFormatter(row, column){
+        var TYPE = ''
+        var time = '';
+        switch (row.type) {
+          case '0':
+            TYPE = '固定班制';
+            time = `每周六、日  休息
+                   每周一、二、三、四、五 班次${row.atd_schedule_groups[0].atd_schedule.name}`
+            break;
+          case '1':
+            TYPE = '排班制';
+            break;
+          case '2':
+            TYPE = '自由工时';
+            break;
+        }
+        return time
+      },
+
+      /**
+       *考勤类型
+       * @param row [Object]当前前行
+       */
+      typeFormatter(row, column){
+        var TYPE = '';
+        switch (row.type) {
+          case '0':
+            TYPE = '固定班制';
+            break;
+          case '1':
+            TYPE = '排班制';
+            break;
+          case '2':
+            TYPE = '自由工时';
+            break;
+        }
+        return TYPE;
+      },
+
+      /**
+       * 考勤人数
+       * @param row {Object} 当前行
+       */
+      countFormatter(row, column){
+        return row.pl_people.length + '人'
+      },
+      /**
+       * 查询所有班组信息
+       * @param params {Object} 用户查询信息
+       */
+      getGroupInfo(params){
+        var _self = this;
+        _self.loading = true;
+        var data = {
+          page: this.tabPage.currentPage,
+          pageSize: this.tabPage.pageSize,
+          atd_name: this.formInline.atd_name
+        };
+        if (params) {
+          data = params;
+        }
+        this.$http.get('/business/attendancegroup/getgrouplist', {params: data})
+          .then(function (res) {
+            if (res.data && res.data.success) {
+              _self.groupTableData = res.data.result
+              _self.loading = false;
+            } else {
+              _self.loading = false;
+              _self.$message({
+                message: res.data.msg,
+                type: 'warning'
+              });
+            }
+            console.log(res)
+          }).catch(function (error) {
+          _self.loading = false;
+          console.log(error)
+        });
+      },
+
+      /**
+       * 点击新增按钮
+       */
+      handleAdd(){
+        this.$router.push({path: 'newAtdGroups'})
+      },
+      /**
+       * 批量删除操作
+       */
+      batchRemove(){
+        var _self = this;
+        var arr = _self.sels;
+        if (arr.length > 0) {
+          _self.getGroupInfo({params: arr});
+        } else {
+          _self.$message({
+            message: '请选择考勤组',
+            type: 'warning'
+          });
+        }
+
+      },
+      /**
+       * 切换每页条数
+       * @params {Number} val 每页条数
+       */
+      handleSizeChange(val) {
+        this.tabPage.pageSize = val;
+        this.getGroupInfo();
+      },
+      /**
+       * 切换页码
+       * @params {Number} val 页码
+       */
+      handleCurrentChange(val) {
+        this.tabPage.currentPage = val;
+        this.getGroupInfo();
+      },
+    },
+    components: {ElFormItem, paging},
+    created() {
+      this.getGroupInfo();
+    },
+    mounted() {
+      console.log('mounted')
+    },
+    updated() {
+      console.log('updated')
+    },
+  }
+</script>
+
+<!-- 添加 "scoped " css作用域只作用于本文件，不作用全局-->
+<style scoped>
+
+</style>

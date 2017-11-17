@@ -1,0 +1,113 @@
+<template>
+    <div>
+        <!--查询-->
+        <span class="rightTitle">警员列表</span>
+        <el-form :inline="true"  class="demo-form-inline el-form-small" ref="formInline">
+            <el-form-item label="角色" prop="rolename">
+                <el-select v-model="role" placeholder="请选择" @change="changeRoles" size="small">
+                    <el-option
+                        v-for="(item,index) in roles"
+                        :label="item.role_name"
+                        :value="item.id"
+                    :key="index">
+                    </el-option>
+                </el-select>
+            </el-form-item>
+        </el-form>
+        <el-tree :data="policeData" node-key="id" ref="tree" highlight-current :props="defaultProps" class="treePos">
+        </el-tree>
+        <router-view></router-view>
+    </div>
+</template>
+
+<script>
+    export default {
+        data(){
+            return {
+                defaultProps: {
+                    children: 'children',
+                    label: 'policename'
+                },
+                //dataTree:[],
+                loading: true,
+                role:'',
+            }
+        },
+        props: ['policeData','roleid','roles'],
+
+        created: function () {
+        },
+        mounted: function () {
+            // this.getRoleList();
+        },
+        components: {
+
+        },
+
+        computed: {
+        },
+        watch:{
+        //    userData:function(){
+        //        console.log(this.userData);
+        //    },
+            roleid:function () {
+                this.role = this.roleid;
+            },
+            // roles:function(){
+            //     console.log(4444);
+            // }
+        },
+        methods: {
+            changeRoles(){
+                this.$emit('changeRoles',this.role);
+            }
+        }
+    }
+</script>
+
+<style scoped>
+    .treePos{
+        height:498px;
+        overflow-y: scroll;
+    }
+    .el-form-small .el-form-item{
+        margin-right:1px;
+    }
+    .rightTitle{
+        position: absolute;
+        top:-24px;
+        font-size:13px;
+    }
+    @media (min-width: 1200px){
+        .el-select {
+            width: 180px;
+        }
+    }
+    @media (min-width: 992px) and (max-width:1200px){
+        .el-select {
+            width: 130px;
+        }
+        .el-form-item__label{
+            font-size:12px
+        }
+        .rightTitle{
+            position: absolute;
+            top:-24px;
+            font-size: 13px
+        }
+    }
+    @media (max-width: 992px){
+        .el-select {
+            width: 100%;
+        }
+        .el-form-item__label{
+            font-size:14px
+        }
+        .rightTitle{
+            position: relative;
+            top:2px;
+            font-size: 14px
+        }
+    }
+  
+</style>

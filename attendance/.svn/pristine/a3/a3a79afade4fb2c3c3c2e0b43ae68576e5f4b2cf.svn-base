@@ -1,0 +1,181 @@
+/***********************************************************************
+ *                           日期时间工具类                            *
+ * ********************************************************************/
+var dateUtil = {
+    /**
+     * 判断输入的日期格式是否为 yyyy-mm-dd 或 yyyy-m-d
+     */
+    isDate: function (dateString) {
+        //判断日期是否为空
+        if (dateString.trim() == "") {
+            alert("日期为空！请输入格式正确的日期\n\r日期格式：yyyy-mm-dd\n\r例    如：2013-08-08\n\r");
+            return false;
+        } else {
+            dateString = dateString.trim();
+        }
+
+        //年月日正则表达式
+        var r = dateString.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+        if (r == null) {
+            alert("请输入格式正确的日期\n\r日期格式：yyyy-mm-dd\n\r例    如：2013-08-08\n\r");
+            return false;
+        }
+        var d = new Date(r[1], r[3] - 1, r[4]);
+        var num = (d.getFullYear() == r[1] && (d.getMonth() + 1) == r[3] && d.getDate() == r[4]);
+        if (num == 0) {
+            alert("请输入格式正确的日期\n\r日期格式：yyyy-mm-dd\n\r例    如：2013-08-08\n\r");
+        }
+        return (num != 0);
+
+    },
+    /**
+         * 方法作用：【取传入日期是星期几】
+         * 使用方法：dateUtil.nowFewWeeks(new Date());
+         * @param date{date} 传入日期类型
+         * @returns {星期四，...}
+         */
+        nowFewWeeks: function (date) {
+            if (date instanceof Date) {
+                var dayNames = new Array("星期天", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六");
+                return dayNames[date.getDay()];
+            } else {
+                return "Param error,date type!";
+            }
+        },
+    /**
+         * 方法作用：【字符串转换成日期】
+         * 使用方法：dateUtil.strTurnDate("2010-01-01");
+         * @param str {String}字符串格式的日期，传入格式：yyyy-mm-dd(2015-01-31)
+         * @return {Date}由字符串转换成的日期
+         */
+        strTurnDate: function (str) {
+            var re = /^(\d{4})\S(\d{1,2})\S(\d{1,2})$/;
+            var dt;
+            if (re.test(str)) {
+                dt = new Date(RegExp.$1, RegExp.$2 - 1, RegExp.$3);
+            }
+            return dt;
+        },
+        /*
+         * 方法作用：【计算2个日期之间的天数】
+         * 传入格式：yyyy-mm-dd(2015-01-31)
+         * 使用方法：dateUtil.dayMinus(startDate,endDate);
+         * @startDate {Date}起始日期
+         * @endDate {Date}结束日期
+         * @return endDate - startDate的天数差
+         */
+        dayMinus: function (startDate, endDate) {
+            if (startDate instanceof Date && endDate instanceof Date) {
+                var days = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24));
+                return days;
+            } else {
+                return "Param error,date type!";
+            }
+        },
+    /**日期加上天数得到新的日期
+     dateTemp 需要参加计算的日期，days要添加的天数，返回新的日期，日期格式：YYYY-MM-DD*/
+        getNewDay: function (dateTemp, days) {
+            var dateTemp = dateTemp.split("-");
+            var nDate = new Date(dateTemp[1] + '-' + dateTemp[2] + '-' + dateTemp[0]); //转换为MM-DD-YYYY格式
+            var millSeconds = Math.abs(nDate) + (days * 24 * 60 * 60 * 1000);
+            var rDate = new Date(millSeconds);
+            var year = rDate.getFullYear();
+            var month = rDate.getMonth() + 1;
+            if (month < 10) month = "0" + month;
+            var date = rDate.getDate();
+            if (date < 10) date = "0" + date;
+            return (year + "-" + month + "-" + date);
+        },
+
+        getDate: function (strDate) {
+            var date = eval('new Date(' + strDate.replace(/\d+(?=-[^-]+$)/,
+                    function (a) {
+                        return parseInt(a, 10) - 1;
+                    }).match(/\d+/g) + ')');
+            return date;
+        }
+
+};
+
+
+// 对Date的扩展，将 Date 转化为指定格式的String
+// 月(M)、日(d)、小时(h)、分(m)、秒(s)、季度(q) 可以用 1-2 个占位符，
+// 年(y)可以用 1-4 个占位符，毫秒(S)只能用 1 个占位符(是 1-3 位的数字)
+// 例子：
+// (new Date()).Format("yyyy-MM-dd hh:mm:ss.S") ==> 2006-07-02 08:09:04.423
+// (new Date()).Format("yyyy-M-d h:m:s.S")      ==> 2006-7-2 8:9:4.18
+Date.prototype.Format = function (fmt) {
+    var o = {
+        "M+": this.getMonth() + 1,                 //月份
+        "d+": this.getDate(),                    //日
+        "h+": this.getHours(),                   //小时
+        "m+": this.getMinutes(),                 //分
+        "s+": this.getSeconds(),                 //秒
+        "q+": Math.floor((this.getMonth() + 3) / 3), //季度
+        "S": this.getMilliseconds()             //毫秒
+    };
+    if (/(y+)/.test(fmt))
+        fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+    for (var k in o)
+        if (new RegExp("(" + k + ")").test(fmt))
+            fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+    return fmt;
+};
+
+
+//重写toString方法，将时间转换为Y-m-d H:i:s格式
+// Date.prototype.toString = function () {
+//     return this.getFullYear() + "-" + (this.getMonth() + 1) + "-" + this.getDate() + " " + this.getHours() + ":" + this.getMinutes() + ":" + this.getSeconds();
+// }
+//格式化时间字符串
+Date.prototype.toFormatString = function (format) {
+    if (format == "") {
+        return this.toString();
+    }
+    var str = '';
+    str = format.replace(/Y|y/, this.getFullYear())
+        .replace(/M|m/, this.getMonth() + 1)
+        .replace(/D|d/, this.getDate())
+        .replace(/H|h/, this.getHours())
+        .replace(/I|i/, this.getMinutes())
+        .replace(/S|s/, this.getSeconds());
+    return str;
+}
+//在当前时间上添加年数
+Date.prototype.addYear = function (years) {
+    var cyear = this.getFullYear();
+    cyear += years;
+    this.setYear(cyear);
+    return this;
+}
+//在当前时间上添加天数
+Date.prototype.addDay = function (days) {
+    var cd = this.getDate();
+    cd += days;
+    this.setDate(cd);
+    return this;
+}
+//在当前时间上减去天数
+Date.prototype.subDay = function (days) {
+    var cd = this.getDate();
+    cd -= days;
+    this.setDate(cd);
+    return this;
+}
+//在当前时间上添加月数
+Date.prototype.addMonth = function (months) {
+    var cm = this.getMonth();
+    cm += months;
+    this.setMonth(cm);
+    return this;
+}
+Date.prototype.subMonth = function (months) {
+    var cm = this.getMonth();
+    cm -= months;
+    this.setMonth(cm);
+    return this;
+}
+
+
+module.exports = dateUtil;
+

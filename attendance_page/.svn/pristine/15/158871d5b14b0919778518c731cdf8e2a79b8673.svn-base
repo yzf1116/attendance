@@ -1,0 +1,168 @@
+<template>
+    <div>
+
+
+        <!--查询-->
+        <span class="rightTitle">用户角色配置</span>
+        <el-form :inline="true"  class="demo-form-inline el-form-small" ref="formInline">
+            <el-form-item label="用户">
+                <el-select v-model="user" placeholder="请选择" @change="changeUser" size="mini">
+                    <el-option
+                        v-for="(item,index) in users"
+                        :label="item.username"
+                        :value="item.id"
+                    :key="index">
+                    </el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item>
+                <el-button size="mini" type="success" @click="handleSave" :disabled="show===false">保存</el-button>
+                <el-button size="mini" @click="resetChecked" :disabled="show===false">清空</el-button>
+            </el-form-item>
+        </el-form>
+        <el-tree :data="dataTree" show-checkbox=""  default-expand-all="" node-key="id" ref="tree" highlight-current :props="defaultProps" class="treePos">
+        </el-tree>
+        <router-view></router-view>
+    </div>
+</template>
+
+<script>
+    export default {
+        data(){
+            return {
+                defaultProps: {
+                    children: 'children',
+                    label: 'rolename'
+                },
+                defaultProps1: {
+                    children: 'children',
+                    label: 'label'
+                },
+                //dataTree:[],
+                loading: true,
+                user:'',
+                show:true,
+                adminName:'',//系统用户名admin
+            }
+        },
+        props: ['dataTree','defaultKey','userid','users'],
+
+        created: function () {
+            this.getAdminUser();
+        },
+        mounted: function () {
+            // this.getSysUserName();
+        },
+        components: {
+
+        },
+        computed: {
+        },
+        watch:{
+            defaultKey:function(){
+                this.$refs.tree.setCheckedNodes(this.defaultKey);
+            },
+            userid:function(){
+                this.user = this.userid;
+                // var a = JSON.parse(this.$getStore('adminData'));
+                if(this.user===this.adminId){
+                    this.show = false;
+                }else{
+                    this.show = true;
+                }
+            }
+        },
+        methods: {
+            handleSave(){
+                var oldArr = [];
+                var d = this.defaultKey;
+                for(var i=0; i<d.length; i++){
+                    oldArr.push(d[i].id);
+                }//原始数据转数组
+                var newArr = this.$refs.tree.getCheckedKeys();
+                var addList = [];
+                var delList = [];
+                if(d.length===0){
+                    delList = [];
+                    addList = newArr;
+                }else{
+                    var ar =oldArr.filter(function(n) {
+                        return newArr.indexOf(n) != -1
+                    });
+                    addList =newArr.filter(function(n) {
+                        return ar.indexOf(n) === -1
+                    });
+                    delList =oldArr.filter(function(n) {
+                        return ar.indexOf(n) === -1
+                    });
+                }
+                var params = {userid:this.userid,delList:delList,addList:addList};
+                var _self = this;
+                this.$http.post('/system/role/saveroleuser',params).then(function (res) {
+                    if(res.data&&res.data.flag){
+                        _self.$message({
+                            message:'操作成功',
+                            type:'success'
+                        })
+                    }
+                }).catch(function (err) {
+                    console.log(err)
+                })
+            },
+           
+            changeUser(d){
+                this.$emit('changeUser',this.user);
+            },
+            resetChecked() {
+                this.$refs.tree.setCheckedKeys([]);
+            },
+            getAdminUser(){
+                this.adminName = 'admin';//先写成默认的
+            }
+        }
+    }
+</script>
+
+<style scoped>
+    .treePos{
+        height:498px;
+        overflow-y: scroll;
+    }
+    .el-form-small .el-form-item{
+        margin-right:1px;
+    }
+    .rightTitle{
+        position: absolute;
+        top:-24px;
+        font-size:13px;
+    }
+    @media (min-width: 1200px){
+       .el-form{
+           width:315px
+       }
+    }
+    @media (min-width: 992px) and (max-width:1200px){
+        .el-form{
+                max-width:305px
+        }
+        .el-select {
+            width: 155px;
+        }
+    }
+    @media (max-width: 992px){
+        .el-form{
+            width:100%
+        }
+        .el-select {
+            width: 100%;
+        }
+        .el-form-item__label{
+            font-size:14px
+        }
+        .rightTitle{
+            position: relative;
+            top:2px;
+            font-size: 14px
+        }
+    }
+</style>

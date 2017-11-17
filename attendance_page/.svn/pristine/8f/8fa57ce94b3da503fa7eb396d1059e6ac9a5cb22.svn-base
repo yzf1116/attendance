@@ -1,0 +1,29 @@
+<template>
+    <div>
+欢迎来到移动警务考勤管理系统
+    </div>
+</template>
+
+<script>
+    export default {
+        data() {
+            return {}
+        },
+        methods: {},
+        components: {},
+        created() {
+            console.log('created')
+        },
+        mounted() {
+            console.log('mounted')
+        },
+        updated() {
+            console.log('updated')
+        },
+    }
+</script>
+
+<!-- 添加 "scoped " css作用域只作用于本文件，不作用全局-->
+<style scoped>
+
+</style>

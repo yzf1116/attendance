@@ -1,0 +1,367 @@
+/**
+ * Created by Jessi on 2017/7/3.
+ */
+const cryptoUtils = require('../../utils/cryptoUtils');
+// const perSonModel = db['pl_person'];
+const sqls = require('../common/sqls');
+const AjaxJson = require('../../utils/AjaxJson');
+const fileUtils = require('../../utils/fileUtils');
+
+const personModel = db['pl_person'];
+const punchModel = db['atd_punch_record'];
+const annexModel = db['sys_annex'];
+const locationRecordModel = db['pl_location_record'];
+const uuid = require('node-uuid');
+const path = require('path');
+const fs = require('fs');
+const formidable = require('formidable');
+const config =require('../../config/baseConfig');
+const serverPath = config.webConfig.defaultServerPath;
+exports.personLogin = async(phone, password, callback)=> {
+    var aj = new AjaxJson();
+    var code = cryptoUtils.irreversibleEncrypt(phone, password);
+    var where = {
+        where: {phone: phone, password: code},
+        attributes: ['id']
+    };
+    try {
+        var perSon = await personModel.findOne(where);
+        if (!perSon) {
+            aj.msg = '你输入的密码和账户名不匹配';
+            aj.success = false;
+            callback(aj);//如果查询为空
+            return;
+        }
+        var pensonid = perSon.dataValues.id;
+        var sql = sqls.getPersonSql(pensonid);
+        var userInfo = await db.sequelize.query(sql, {model: personModel});
+
+        if (!userInfo) {
+            aj.msg = '未匹配到查询信息';
+            aj.success = false;
+            callback(aj);
+            return;
+        }
+        var defaultServerPat = require('../../config/baseConfig').webConfig.defaultServerPath;
+        userInfo[0].dataValues.realpath = `${defaultServerPat}/${userInfo[0].dataValues.realpath}`;
+        aj.result = userInfo;
+        callback(aj);
+    }
+    catch (err) {
+        console.log(`${err.name} : ${err.message}`);
+        aj.msg = `${err.name}:数据库查询失败`;
+        aj.success = false;
+        callback(aj); 
+    }
+
+};
+
+
+exports.personalstats = async(data, callback)=> {
+    // var data = {
+    //     policeid:'c5055490-61e7-11e7-95c0-0b745660720c',
+    //     month:new Date()
+    // };
+    // var aj = new AjaxJson();
+    // var where1 = {id:data,policeid,attributes:['atd_groupid']};
+    // var code = cryptoUtils.irreversibleEncrypt(phone, password);
+    // var where = {
+    //     where: {phone: phone, password: code},
+    //     attributes: ['id']
+    // };
+    // try {
+    //     var atd_groupid = await personModel.findOne(where1);
+    //     console.log(atd_groupid)
+    //     aj.success = true;
+    //     aj.result = userInfo;
+    //     callback(aj);
+    // }
+    // catch (err) {
+    //     console.log(`${err.name} : ${err.message}`);
+    //     aj.msg = `${err.name}:数据库查询失败`;
+    //     callback(aj); //如果是数据库查询失败，就返回err
+    // }
+
+};
+/**
+ * 修改密码
+ * 
+ */
+exports.changePsd = async function(data,callback){
+    var aj = new AjaxJson();
+    var where = {
+        where:{id:data.policeid},
+        attributes:['id','phone','password']
+    };
+    try {
+        var person = await personModel.findOne(where);
+        if(person){
+            if(person.password != cryptoUtils.irreversibleEncrypt(person.phone,data.oldPsd)){
+                aj.success = false;
+                aj.msg = "旧密码错误";
+                callback(aj);
+            }
+        }else{
+            aj.success = false;
+            aj.msg = "该用户不存在";
+            callback(aj);
+        }
+        person.password = cryptoUtils.irreversibleEncrypt(person.phone,data.newPsd);
+        await person.save();
+        callback(aj);
+    }
+    catch (err) {
+        console.log(`${err.name} : ${err.message}`);
+        aj.success = false;
+        aj.msg = `${err.name}:数据库查询失败`;
+        callback(aj); //如果是数据库查询失败，就返回err
+    }
+} 
+exports.personalInfo = async function(data,callback){
+    var aj = new AjaxJson();
+    var where = {
+        where:{id:data.policeid},
+        attributes:['id','police_name','cardid','code','phone','age','gender','last_date','photo']
+    };
+    try {
+        var person = await personModel.findOne(where);
+        if(!person){
+            aj.success = false;
+            aj.msg = "该用户不存在";
+            callback(aj);
+        }else{
+           if(!person.photo||person,photo=''){
+               person.photo = null;
+               aj.result = person;
+               callback(aj);
+           }
+        }
+        var test = await annexModel.findOne({where:{id:person.photo}});
+        if(!test){
+            aj.success = false;
+            aj.msg = "该用户头像记录不存在";
+            callback(aj);
+        }else{
+            person.photo =serverPath +"/"+ test.realpath;
+            aj.result = person;
+            callback(aj);
+        }
+    }
+    catch (err) {
+        console.log(`${err.name} : ${err.message}`);
+        aj.success = false;
+        aj.msg = `${err.name}:数据库查询失败`;
+        callback(aj); //如果是数据库查询失败，就返回err
+    }
+}
+/**
+ * 用户上传头像
+ * @param req
+ * @param callback
+ */
+exports.uploadAvatar = function(req,callback){
+    var aj = new AjaxJson();
+    try {
+        var form = new formidable.IncomingForm();
+        form.uploadDir = './public/upload/image/';
+        //createManyDirSync(form.uploadDir);
+
+        form.parse(req, function (error, fields, files) {
+            var file = files.file;
+            var uploadDir = reNameFile(file);
+            if (fields.policeid) {
+                editChangeImg(fields, file, uploadDir,personModel, function (ret) {
+                    if (ret.flag) {
+                        callback(aj)
+                    } else {
+                        aj.success = false;
+                        aj.msg = ret.msg;
+                        callback(aj);
+                    }
+                })
+            }
+        })
+
+
+    } catch (err) {
+        res.send({flag: false, msg: err})
+    }
+}
+
+/**
+ * 保存用户打卡位置信息流水
+ * @param data
+ * @param callback
+ */
+exports.saveLocationRecord = async function (data, callback) {
+    var aj = new AjaxJson();
+    data.id = uuid.v1();
+    try {
+        await locationRecordModel.create(data);
+        callback(aj);
+    } catch (err) {
+        console.log(`${err.name} : ${err.message}`);
+        aj.success = false;
+        aj.msg = `${err.name}:数据库查询失败`;
+        callback(aj); //如果是数据库查询失败，就返回err
+    }
+}
+
+function time(month){
+    var y = month.getYear();
+    var m = month.getMonth();
+    var tempTime = new Date(y,m,0);
+    var time = new Date();
+    var saturday = new Array();
+    var sunday = new Array();
+    for(var i=1;i<=tempTime.getDate();i++){
+        time.setFullYear(y,m-1,i);
+        var day = time.getDay();
+        if(day == 6||day == 0){
+            saturday.push(i);
+        }
+    }
+   return saturday;
+}
+
+//重命名保存文件
+function reNameFile(file) {
+    var d = new Date()
+    var month = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
+    var fName = d.getFullYear() + '' + month[d.getMonth()] + d.getDate() +
+        d.getHours() + d.getMinutes() + d.getSeconds() + parseInt(Math.random() * 1000)
+
+    switch (file.type) {
+        case "image/jpeg":
+            fName = fName + '.jpg'
+            break
+        case "image/png":
+            fName = fName + '.png'
+            break
+        default:
+            fName = fName + '.png'
+            break
+    }
+
+    var uploadDir = 'public/upload/image/' + fName
+
+    return uploadDir
+}
+
+//保存修改图片
+async function editChangeImg(fields, file, uploadDir,model, callback) {
+    var realPath = uploadDir.substr(7);
+    var aj = new AjaxJson();
+    var where = {
+        where:{id:fields.policeid},
+        attributes:['photo','id'],
+        include:[
+            {model:annexModel}
+        ]
+    };
+    try {
+        var person = await personModel.findOne(where);
+
+        if(!person){
+            aj.success = false;
+            aj.msg = "该用户不存在";
+            callback(aj);
+        }
+        if (person.photo&&person.photo!=''&&person.photo!=null) {
+            fs.rename(file.path, uploadDir, function (err) {
+                if (err) {
+                    // throw new Error(err);
+                    callback({flag: false, msg: '文件保存失败'});
+                } else {
+                    var path ='public/'+ person.sys_annex.realpath;
+                    annexModel.update({realpath: realPath}, {where: {businesskey: fields.policeid}})
+                        .then(function (res) {
+                            if (res) {
+                                fs.unlink(path, function (err) {
+                                    if (err) {
+                                        return callback({flag: false, msg: '原图片删除失败，修改信息保存成功'})
+                                    } else {
+                                        return callback({flag: res, msg: '操作成功'})
+                                    }
+                                })
+
+                            } else {
+                                return callback({flag: false, msg: '图片信息保存失败'})
+                            }
+                        }).catch(function (err) {
+                        return callback({flag: false, msg: '图片信息保存失败'})
+                    })
+                }
+            })
+        } else {
+            fields.photo = uuid.v1();
+            var params = {
+                id: fields.photo,
+                businesskey: fields.policeid,
+                realpath: realPath
+            };
+            fs.rename(file.path, uploadDir, function (err) {
+                if (err) {
+                    // throw new Error(err);
+                    return callback({flag: false, msg: err});
+                } else {
+                    model.update({photo:fields.photo}, {where: {id: fields.policeid}}).then(function (res) {
+                        if (res) {
+                            annexModel.create(params).then(function (res) {
+                                return callback({flag: res, msg: '保存成功'})
+                            }).catch(function (err) {
+                                if (err) {
+                                    console.log(err);
+                                    return callback({flag: false, msg: '附件记录插入失败'});
+                                }
+                            })
+                        }
+                    }).catch(function (err) {
+                        if (err) {
+                            console.log(err);
+                            return callback({flag: false, msg: '附件记录插入错误'});
+                        }
+                    })
+                }
+
+            })
+        }
+
+    }
+    catch (err) {
+        console.log(`${err.name} : ${err.message}`);
+        aj.success = false;
+        aj.msg = `${err.name}:数据库查询失败`;
+        callback(aj); //如果是数据库查询失败，就返回err
+    }
+
+}
+
+//计算距离，参数分别为第一点的纬度，经度；第二点的纬度，经度 
+// function GetDistance(lat1,lng1,lat2,lng2){
+//     var radLat1 = Rad(lat1);
+//     var radLat2 = Rad(lat2);
+//     var a = radLat1 - radLat2;
+//     var  b = Rad(lng1) - Rad(lng2);
+//     var s = 2 * Math.asin(Math.sqrt(Math.pow(Math.sin(a/2),2) +
+//             Math.cos(radLat1)*Math.cos(radLat2)*Math.pow(Math.sin(b/2),2)));
+//     s = s *6378.137 ;// EARTH_RADIUS;
+//     s = Math.round(s * 10000) / 10000; //输出为公里
+//     //s=s.toFixed(4);
+//     return s;
+// }
+// function Rad(d){
+//     return d * Math.PI / 180.0;//经纬度转换成三角函数中度分表形式。
+// }
+// function GetDistance(lat1,lng1,lat2,lng2) {
+//     pk = 180 / 3.14169;
+//     a1 = lat1 / pk;
+//     a2 = lng1 / pk;
+//     b1 = lat2 / pk;
+//     b2 = lng2 / pk;
+//     t1 = Math.cos(a1) * Math.cos(a2) * Math.cos(b1) * Math.cos(b2);
+//     t2 = Math.cos(a1) * Math.sin(a2) * Math.cos(b1) * Math.sin(b2);
+//     t3 = Math.sin(a1) * Math.sin(b1);
+//     tt = Math.acos(t1 + t2 + t3);
+//     return 6366000 * tt;
+// }

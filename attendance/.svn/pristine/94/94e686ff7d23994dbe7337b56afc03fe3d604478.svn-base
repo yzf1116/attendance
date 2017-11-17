@@ -1,0 +1,23 @@
+/* jshint indent: 1 */
+
+module.exports = function(sequelize, DataTypes) {
+	return sequelize.define('atd_group_address', {
+		id: {
+			type: DataTypes.STRING(36),
+			allowNull: false,
+			primaryKey: true
+		},
+		groupid: {
+			type: DataTypes.STRING(36),
+			allowNull: true
+		},
+		addressid: {
+			type: DataTypes.STRING(36),
+			allowNull: true
+		}
+	}, {
+		tableName: 'atd_group_address',
+		timestamps: false,
+		freezeTableName: true
+	});
+};

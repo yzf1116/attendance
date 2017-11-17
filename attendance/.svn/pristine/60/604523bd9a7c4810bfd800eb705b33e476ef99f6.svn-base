@@ -1,0 +1,50 @@
+/**
+ * Created by Jessi on 2017/7/6.
+ */
+var attendanceService = require('../../../service/api/AttendanceService');
+var customUtils = require('../../../utils/customUtils');
+
+module.exports = {
+    //上班打卡接口
+    post_topunchcard: function (req, res) {
+        if (!req.body) {
+            return res.send('请传入参数');
+        }
+        else {
+            var params = customUtils.checkObjParams(req.body);
+            attendanceService.toPunchCard(params, function (ret) {
+                if (ret.err) {
+                    res.ret()
+                }
+            });
+        }
+
+    },
+    get_topunchcard: function (req, res) {
+        if (!req.body) {
+            return res.send('请传入参数');
+        }
+        else {
+            console.log(122312125);
+            var params = customUtils.checkObjParams(req.query);
+            attendanceService.toPunchCard(params, function (ret) {
+                if (ret.name) {
+                    res.send(ret.message)
+                } else {
+                    res.json(ret)
+                }
+            });
+        }
+
+    },
+    //下班打卡接口
+    post_ofpunchcard: function (req, res) {
+        var params = customUtils.checkObjParams(req.body);
+        if (!params) {
+            res.send('请传入参数');
+        } else {
+            attendanceService.ofPunchCard(params);
+        }
+
+    }
+};

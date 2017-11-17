@@ -1,0 +1,48 @@
+/**
+ * Created by yangzhenfang on 2017/05/31.
+ */
+var sysTemplate = require('../../../service/system/TemplateService.js')
+
+module.exports = {
+    get_index: function (req, res) {
+        res.send("表单模版管理功能测试成功");
+    },
+    //查询所有模版信息
+    get_getsystemplatelist: function (req, res) {
+        sysTemplate.getSysTemplateList(req.query, function (ret) {
+            res.send(ret)
+        })
+    },
+    //新增模版信息
+    post_addsystemplate: function (req, res) {
+        sysTemplate.addSysTemplate(req.body, function (ret) {
+            console.log(ret);
+            res.send(ret)
+        })
+    },
+    //保存模版文件
+    post_customtemplate: function (req, res) {
+        sysTemplate.customTemplate(req.body, function (ret) {
+            res.send(ret)
+        })
+    },
+    //读取文件接口
+    // post_appreadcustomtemplate: function (req, res) {
+    //     sysTemplate.appReadCustomTemplate(req.body, function (ret) {
+    //         res.send(ret)
+    //     })
+    // },
+    //删除单个模版信息
+    post_deletesystemplate: function (req, res) {
+        sysTemplate.deleteSysTemplate(req.body, function (ret) {
+            res.send(ret)
+        })
+    },
+    //编辑模版启用状态
+    post_edittemplate: function(req, res){
+        sysTemplate.editTemplate(req.body,function(ret){
+            res.send(ret)
+        })
+    }
+};
+

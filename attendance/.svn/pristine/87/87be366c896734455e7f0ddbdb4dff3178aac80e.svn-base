@@ -1,0 +1,16 @@
+{
+  "dbConfigs": {
+    "dialect":"mysql",
+    "username": "root",
+    "password": "j123456s",
+    "database": "attendance_db",
+    "host": "localhost",
+    "output": "../models",
+    "timezone": "+08:00",
+    "additional": {
+      "timestamps": false,
+      "freezeTableName": true
+    },
+    "directory": "../models"
+  }
+}

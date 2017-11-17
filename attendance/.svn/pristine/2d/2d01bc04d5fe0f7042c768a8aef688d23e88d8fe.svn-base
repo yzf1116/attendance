@@ -1,0 +1,28 @@
+/**
+ * Created by Jessi on 2017/7/6.
+ */
+var punchRecordModel = db['atd_punch_record'];
+var uuid = require('node-uuid');
+
+exports.toPunchCard = async function (params, callback) {
+    try {
+        var {policeid, to_time} = params;
+        const isComplete = await punchRecordModel.create({id: id = uuid.v1(), policeid, to_time});
+
+        callback(isComplete);
+
+    } catch (err) {
+        console.error(err.name + ':' + err.message);
+
+        callback(err)
+    }
+
+
+};
+exports.ofPunchCard = async function (params, callback) {
+    var {policeid, of_time} = params;
+
+    const isComplete = await punchRecordModel.create();
+
+
+};

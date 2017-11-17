@@ -1,0 +1,39 @@
+/* jshint indent: 1 */
+
+module.exports = function(sequelize, DataTypes) {
+	return sequelize.define('review_record', {
+		id: {
+			type: DataTypes.STRING(36),
+			allowNull: false,
+			primaryKey: true
+		},
+		approver: {
+			type: DataTypes.STRING(50),
+			allowNull: true
+		},
+		content: {
+			type: DataTypes.TEXT,
+			allowNull: true
+		},
+		send_person: {
+			type: DataTypes.STRING(50),
+			allowNull: true
+		},
+		review_date: {
+			type: DataTypes.DATE,
+			allowNull: true
+		},
+		approval_status: {
+			type: DataTypes.STRING(20),
+			allowNull: true
+		},
+		remarks: {
+			type: DataTypes.STRING(255),
+			allowNull: true
+		}
+	}, {
+		tableName: 'review_record',
+		timestamps: false,
+		freezeTableName: true
+	});
+};

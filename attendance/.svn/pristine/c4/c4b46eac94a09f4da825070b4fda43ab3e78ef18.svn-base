@@ -1,0 +1,79 @@
+/**
+ * Created by DELL on 2017/7/5.
+ */
+const sqls = {
+    //登录获取人员信息
+    getPersonSql: function (personId) {
+        return `SELECT per.id AS policeid, per.police_name, per.phone, anx.realpath, ro.role_name
+	, ro.role_level, atgup.atd_name, atgup.id AS atd_groupid, atgup.type
+FROM pl_person per
+	LEFT JOIN pl_role_police per_ro ON per.id = per_ro.policeid
+	LEFT JOIN pl_role ro ON per_ro.roleid = ro.id
+	LEFT JOIN atd_group atgup ON per.atd_groupid = atgup.id
+	LEFT JOIN sys_annex anx ON per.id = anx.businesskey
+WHERE per.id = '${personId}'`
+    },
+    //获取警员某月考勤记录
+    getAtdRecordSql:function (policeid,month) {
+
+        return `SELECT pl_person.police_name,pl_org.org_name,a.policeid,a.work_status,a.off_work_status,a.is_overtime,a.overtime_hours,a.work_hours,a.late_long,
+        DATE_FORMAT(a.record_date, '%Y-%m-%d') AS date,DATE_FORMAT(a.record_date, '%w') AS week FROM atd_punch_record AS a
+        LEFT JOIN pl_person ON (pl_person.id = a.policeid)
+        LEFT JOIN pl_org ON (pl_person.pl_orgid = pl_org.id)
+        where YEAR(a.record_date) = ${month.getFullYear()} and MONTH(a.record_date)=${month.getMonth()+1} and a.policeid = '${policeid}';`
+    },
+    getQjSql: function (policeid, month) {
+        return `select * FROM rev_apply a where YEAR(a.create_date) = '${month.getFullYear()}' and 
+        MONTH(a.create_date)='${month.getMonth() + 1}' and a.personid = '${policeid}'`;
+    },
+    monthStatsCount:function () {
+        return `select count(t.counts) as count from (select count(*) counts from atd_punch_record group by policeid) t `;
+    },
+    monthStatsSql:function (date,policeArr,page) {
+        return `SELECT pl_person.police_name,pl_person.code,pl_org.org_name,pl_role.role_name,rev_apply.form_json,
+        COUNT( CASE WHEN work_status !='休息' THEN 1 ELSE null END )-COUNT( CASE WHEN work_status='缺卡' and  off_work_status ='缺卡'  THEN 1 ELSE null END )-COUNT( CASE WHEN work_status='请假'and off_work_status='请假'  THEN 1 ELSE null END ) AS attendDays,
+        COUNT( CASE WHEN work_status='休息' THEN 1 ELSE null END ) AS restDays,
+        COUNT( CASE WHEN work_status ='迟到'  THEN 1 ELSE null END ) AS lateNum,
+        COUNT( CASE WHEN off_work_status ='早退'  THEN 1 ELSE null END ) AS leaveNum,
+        COUNT( CASE WHEN work_status='缺卡' and  off_work_status !='缺卡' THEN 1 ELSE null END ) as missNum1,
+        COUNT(CASE WHEN  work_status!='缺卡' and  off_work_status ='缺卡'  THEN 1 ELSE null END ) AS missNum2,
+        COUNT( CASE WHEN work_status='缺卡' and  off_work_status ='缺卡'  THEN 1 ELSE null END ) AS absenteeism,
+        COUNT( CASE WHEN work_status='出差'  THEN 1 ELSE null END ) AS travelDays,
+        COUNT( CASE WHEN work_status='外勤' or off_work_status='外勤'  THEN 1 ELSE null END ) AS fieldTimes,
+        COUNT( CASE WHEN work_status='补卡' or off_work_status='补卡'  THEN 1 ELSE null END )+COUNT( CASE WHEN work_status='补卡'and off_work_status='补卡'  THEN 1 ELSE null END ) AS fillCard,
+        COUNT( CASE WHEN work_status='请假' or off_work_status='请假'  THEN 1 ELSE null END )+COUNT( CASE WHEN work_status='请假' and off_work_status='请假'  THEN 1 ELSE null END ) AS leaveTimes, 
+        SUM(work_hours) as workHours,SUM(overtime_hours) as overTimeHours 
+        FROM atd_punch_record LEFT JOIN pl_person on (pl_person.id = atd_punch_record.policeid) 
+        LEFT JOIN pl_org on (pl_person.pl_orgid = pl_org.id) LEFT JOIN pl_role_police on (pl_role_police.policeid = pl_person.id)
+        LEFT JOIN pl_role on (pl_role_police.roleid = pl_role.id) LEFT JOIN rev_apply on (pl_person.id = rev_apply.personid and rev_apply.template_code='qj')
+        where ${policeArr} record_date>='${date.startDate}' and record_date<='${date.endDate}' GROUP BY atd_punch_record.policeid ${page};`
+    },//数据库变更后
+    punchSql1:function (date,policeArr,page) {
+        return `SELECT pl_person.police_name,pl_person.code,pl_org.org_name,pl_role.role_name,atd_punch_record.policeid FROM atd_punch_record 
+        LEFT JOIN pl_person on (pl_person.id = atd_punch_record.policeid) 
+        LEFT JOIN pl_org on (pl_person.pl_orgid = pl_org.id) 
+        LEFT JOIN pl_role_police on (pl_role_police.policeid = pl_person.id)
+        LEFT JOIN pl_role on (pl_role_police.roleid = pl_role.id)
+        where ${policeArr} record_date>='${date.startDate}' and record_date<='${date.endDate}' GROUP BY atd_punch_record.policeid ${page};`
+    },//数据库变更后
+    punchSql2:function (date,policeArr,page) {
+        return `SELECT pl_person.police_name,pl_person.code,pl_org.org_name,policeid FROM atd_punch_record 
+        LEFT JOIN pl_person on (pl_person.id = atd_punch_record.policeid) 
+        LEFT JOIN pl_org on (pl_person.pl_orgid = pl_org.id) 
+        where ${policeArr} record_date>='${date.startDate}' and record_date<='${date.endDate}' GROUP BY policeid ${page};`
+    },//数据库变更后
+    // monthStatsSql:function (date,policeArr,page) {
+    //     return `SELECT policeid,count(policeid),COUNT( CASE WHEN ending not in('休息','旷工')  THEN 1 ELSE null END ) AS attendDays,
+    //     COUNT( CASE WHEN ending='休息' THEN 1 ELSE null END ) AS restDays,COUNT( CASE WHEN ending ='迟到'  THEN 1 ELSE null END ) AS lateNum,
+    //     COUNT( CASE WHEN ending ='早退'  THEN 1 ELSE null END ) AS leaveNum,COUNT( CASE WHEN ending='缺卡'  THEN 1 ELSE null END ) AS missNum,
+    //     COUNT( CASE WHEN ending ='旷工'  THEN 1 ELSE null END ) AS absenteeism,COUNT( CASE WHEN ending='出差'  THEN 1 ELSE null END ) AS travelDays,
+    //     COUNT( CASE WHEN ending='外勤'  THEN 1 ELSE null END ) AS fieldTimes,COUNT( CASE WHEN ending='补卡'  THEN 1 ELSE null END ) AS fillCard,
+    //     COUNT( CASE WHEN ending='请假'  THEN 1 ELSE null END ) AS leaveTimes, SUM(work_hours) as workHours,SUM(overtime_hours) as overTimeHours
+    //     FROM atd_punch_record where ${policeArr} record_date>='${date.startDate}' and record_date<='${date.endDate}' GROUP BY policeid ${page};`
+    // },//policeid in ('3') and
+    // //获取人员班次信息
+    // getPersonScheduleSql : function (atdGroupid) {
+    //     return `SELECT work_date FROM atd_schedule sd LEFT JOIN atd_schedule_group sgrp ON sd.id=sgrp.scheduleid LEFT JOIN atd_group grp ON grp.id=sgrp.groupid where grp.id='${atdGroupid}'`
+    // }
+}
+module.exports = sqls;

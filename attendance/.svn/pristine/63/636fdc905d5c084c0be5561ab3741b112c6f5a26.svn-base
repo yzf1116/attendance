@@ -1,0 +1,23 @@
+/* jshint indent: 1 */
+
+module.exports = function(sequelize, DataTypes) {
+	return sequelize.define('atd_schedule_group', {
+		id: {
+			type: DataTypes.STRING(36),
+			allowNull: false,
+			primaryKey: true
+		},
+		scheduleid: {
+			type: DataTypes.STRING(36),
+			allowNull: true
+		},
+		groupid: {
+			type: DataTypes.STRING(36),
+			allowNull: true
+		}
+	}, {
+		tableName: 'atd_schedule_group',
+		timestamps: false,
+		freezeTableName: true
+	});
+};

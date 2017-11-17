@@ -1,0 +1,312 @@
+[Wed Jun 28 2017 16:53:06 GMT+0800 (CST)]/upload/image/2017062895355284.jpg
+[Error: Not Found
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/app.js:112:15
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:618:15
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:256:14)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/app.js:89:5
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at Function.handle (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:176:3)
+    at router (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:46:12)
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at urlencodedParser (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/body-parser/lib/types/urlencoded.js:91:7)]
+[Wed Jun 28 2017 16:57:26 GMT+0800 (CST)]/business/policemanage/saveinfoimage
+[Error: Not Found
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/app.js:112:15
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:618:15
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:256:14)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/app.js:89:5
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at Function.handle (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:176:3)
+    at router (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:46:12)
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at urlencodedParser (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/body-parser/lib/types/urlencoded.js:91:7)]
+[Wed Jun 28 2017 16:57:26 GMT+0800 (CST)]/business/policemanage/saveinfoimage
+[Error: Not Found
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/app.js:112:15
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:618:15
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:256:14)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/app.js:89:5
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at Function.handle (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:176:3)
+    at router (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:46:12)
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at urlencodedParser (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/body-parser/lib/types/urlencoded.js:91:7)]
+[Wed Jun 28 2017 16:57:26 GMT+0800 (CST)]/favicon.ico
+[Error: Not Found
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/app.js:112:15
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:618:15
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:256:14)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/app.js:89:5
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at Function.handle (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:176:3)
+    at router (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:46:12)
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at urlencodedParser (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/body-parser/lib/types/urlencoded.js:91:7)]
+[Wed Jun 28 2017 17:10:02 GMT+0800 (CST)]/upload/image/2017062895355284.jpg
+[Error: Not Found
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/app.js:112:15
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:618:15
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:256:14)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/app.js:89:5
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at Function.handle (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:176:3)
+    at router (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:46:12)
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at urlencodedParser (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/body-parser/lib/types/urlencoded.js:91:7)]
+[Wed Jun 28 2017 17:13:15 GMT+0800 (CST)]/upload/image/2017062895355284.jpg
+[Error: Not Found
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/app.js:112:15
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:618:15
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:256:14)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/app.js:89:5
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at Function.handle (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:176:3)
+    at router (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:46:12)
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at urlencodedParser (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/body-parser/lib/types/urlencoded.js:91:7)]
+[Wed Jun 28 2017 17:49:56 GMT+0800 (CST)]/upload/image/2017062895355284.jpg
+[Error: Not Found
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/app.js:112:15
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:618:15
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:256:14)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/app.js:89:5
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at Function.handle (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:176:3)
+    at router (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:46:12)
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at urlencodedParser (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/body-parser/lib/types/urlencoded.js:91:7)]
+[Wed Jun 28 2017 17:50:58 GMT+0800 (CST)]/upload/image/2017062895355284.jpg
+[Error: Not Found
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/app.js:112:15
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:618:15
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:256:14)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/app.js:89:5
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at Function.handle (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:176:3)
+    at router (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:46:12)
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at urlencodedParser (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/body-parser/lib/types/urlencoded.js:91:7)]
+[Thu Jun 29 2017 09:08:54 GMT+0800 (CST)]/login
+[Error: Not Found
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/app.js:112:15
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:618:15
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:256:14)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/app.js:89:5
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at Function.handle (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:176:3)
+    at router (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:46:12)
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at urlencodedParser (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/body-parser/lib/types/urlencoded.js:82:7)]
+[Thu Jun 29 2017 09:15:36 GMT+0800 (CST)]/login
+[Error: Not Found
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/app.js:112:15
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:618:15
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:256:14)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/app.js:89:5
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at Function.handle (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:176:3)
+    at router (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:46:12)
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at urlencodedParser (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/body-parser/lib/types/urlencoded.js:82:7)]
+[Thu Jun 29 2017 09:16:39 GMT+0800 (CST)]/login
+[Error: Not Found
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/app.js:112:15
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:618:15
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:256:14)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/app.js:89:5
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at Function.handle (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:176:3)
+    at router (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:46:12)
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at urlencodedParser (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/body-parser/lib/types/urlencoded.js:82:7)]
+[Thu Jun 29 2017 14:56:57 GMT+0800 (CST)]/system/attendance/punchcardrecord
+[ReferenceError: consoel is not defined
+    at Object.exports.getPunchRecord (/Users/yangzhenfang/杨真芳/昆明交警/attendance/service/attendance/atdReportService.js:9:5)
+    at Object.module.exports.get_punchcardrecord (/Users/yangzhenfang/杨真芳/昆明交警/attendance/controls/system/controllers/attendanceController.js:7:19)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/framework/expressController.js:137:48
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/route.js:131:13)
+    at Route.dispatch (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/route.js:112:3)
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:277:22
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/app.js:89:5
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at Function.handle (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:176:3)
+    at router (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:46:12)
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)]
+[Thu Jun 29 2017 14:57:10 GMT+0800 (CST)]/system/attendance/punchcardrecord
+[ReferenceError: consoel is not defined
+    at Object.exports.getPunchRecord (/Users/yangzhenfang/杨真芳/昆明交警/attendance/service/attendance/atdReportService.js:9:5)
+    at Object.module.exports.get_punchcardrecord (/Users/yangzhenfang/杨真芳/昆明交警/attendance/controls/system/controllers/attendanceController.js:7:19)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/framework/expressController.js:137:48
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/route.js:131:13)
+    at Route.dispatch (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/route.js:112:3)
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:277:22
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/app.js:89:5
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)
+    at next (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:271:10)
+    at Function.handle (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:176:3)
+    at router (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:46:12)
+    at Layer.handle [as handle_request] (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:312:13)
+    at /Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:280:7
+    at Function.process_params (/Users/yangzhenfang/杨真芳/昆明交警/attendance/node_modules/express/lib/router/index.js:330:12)]

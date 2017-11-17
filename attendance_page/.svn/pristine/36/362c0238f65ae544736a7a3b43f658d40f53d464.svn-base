@@ -1,0 +1,380 @@
+<template>
+  <div>
+    <!--查询-->
+    <el-form :inline="true" :model="formInline" class="demo-form-inline" ref="formInline"
+             @keyup.enter.native="onSearch('formInline')">
+      <el-form-item label="班次名称" prop="org_name">
+        <el-input v-model="formInline.name" size="mini" placeholder="班次名称"></el-input>
+      </el-form-item>
+      <el-form-item>
+        <el-button size="mini" type="primary" icon="search" @click="onSearch('formInline')">查询</el-button>
+        <el-button size="mini" type="success" icon="plus" @click="handleAdd">新增</el-button>
+        <el-button size="mini" type="danger" icon="delete" @click="batchRemove">批量删除</el-button>
+      </el-form-item>
+    </el-form>
+    <!--表单-->
+    <el-table
+      :data="atdScheduleTableData"
+      border
+      v-loading="loading"
+      :height="this.$store.state.gTableHeight"
+      @selection-change="handleSelectionChange"
+      style="width: 100%">
+      <el-table-column
+        type="selection">
+      </el-table-column>
+      <el-table-column
+        prop="name"
+        label="班次名称"
+        sortable>
+      </el-table-column>
+      <el-table-column
+        prop="work_date"
+        label="上班时间"
+        :formatter="dateFormatter"
+        sortable>
+      </el-table-column>
+      <el-table-column
+        prop="off_date"
+        :formatter="dateFormatter2"
+        label="下班时间">
+      </el-table-column>
+      <el-table-column
+        prop="hours"
+        label="工作时长">
+      </el-table-column>
+      <el-table-column label="操作" width="250">
+        <template scope="scope">
+          <el-button
+            size="mini"
+            @click="handleEdit(scope.$index, scope.row)">编辑
+
+          </el-button>
+          <!--<el-button-->
+          <!--size="small"-->
+          <!--@click="handleRole(scope.$index, scope.row)">查看角色-->
+          <!--</el-button>-->
+          <el-button
+            size="mini"
+            type="danger"
+            @click="handleDelete(scope.$index, scope.row)">删除
+
+          </el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+    <paging @emitsizechange="handleSizeChange"
+            @emitcurrentchange="handleCurrentChange"
+            :currentPage="tabPage.currentPage"
+            :pageSizes="tabPage.pageSizes"
+            :pageSize="tabPage.pageSize"
+            :total="tabPage.totalNum">
+    </paging>
+
+    <el-dialog v-bind:title="formTitle" v-model="dialogInfo" :close-on-click-modal="false"
+               v-on:close="resetForm('form')" size="tiny">
+      <el-form :model="form" :rules="this.$validateRule" ref="form" label-width="110px">
+        <el-form-item label="班次名称" prop="atdSchedule_name">
+          <el-input v-model="form.atdSchedule_name"></el-input>
+        </el-form-item>
+        <!-- <el-form-item label="上级机构" prop="parentdepartid">
+            <el-input v-model="form.parentdepartid"></el-input>
+        </el-form-item> -->
+        <el-form-item label="上班时间" prop="atdSchedule_work_date">
+          <el-time-picker type="fixed-time" placeholder="上班时间" v-model="form.atdSchedule_work_date"
+                          style="width: 100%;"></el-time-picker>
+        </el-form-item>
+        <el-form-item prop="atdSchedule_off_date" label="下班时间">
+          <el-time-picker type="fixed-time" placeholder="选择时间" v-model="form.atdSchedule_off_date" :picker-options="{
+format:'HH:mm'
+          }" style="width: 100%;"></el-time-picker>
+        </el-form-item>
+        <span style="color: #bbb">合计工作时长  {{hours}}</span>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="dialogInfo=false">取 消</el-button>
+        <el-button type="primary" @click="submitForm('form')">确 定</el-button>
+      </div>
+    </el-dialog>
+
+  </div>
+</template>
+
+<script>
+  import paging from '../../common/Paging.vue'
+  import moment from 'moment'
+  export default {
+    data() {
+      return {
+        form: {
+          atdSchedule_name: '',
+          atdSchedule_work_date: '',
+          atdSchedule_off_date: '',
+        },
+
+        formTitle: '',//新增编辑模态框title
+        dialogInfo: false,
+        atdScheduleTableData: [],//班次列表数组
+        sels: [],//表格选中列
+        tabPage: {
+          currentPage: 1,
+          pageSize: 10,
+          pageSizes: [10, 20, 30, 50]
+        },//分页信息
+        loading: false,
+        formInline: {
+          name: ''
+        }
+      }
+    },
+    methods: {
+      /**
+       * 查询 根据机构名称模糊查询
+       * @params {String} formName 进行验证
+       */
+      onSearch(formName){
+        var params = this.formInline;
+        params.page = 1;
+        params.pageSize = this.tabPage.pageSize;
+        this.tabPage.currentPage = 1;//每次查询默认第一页
+        var _self = this;
+        _self.$refs[formName].validate((valid) => {
+          if (valid) {
+            _self.getScheduleList(params);
+
+          } else {
+            console.log('提交错误');
+          }
+        });
+      },
+      /**
+       * 删除按钮点击事件
+       * @params {Number} index   行号
+       * @params {Object} row     行对象
+       */
+      handleDelete(index, row) {
+        var _self = this;
+        _self.deleteScheduleInfo(row);
+      },
+      /**
+       * 删除部门信息
+       * @params {Object} row|rows     行对象
+       */
+      deleteScheduleInfo(data){
+        var _self = this;
+        this.$confirm('此操作将永久删除选择班次, 是否继续?', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(function () {
+          _self.$http.post('/business/atdSchedule/deletescheduleinfo', data).then(function (res) {
+            if (res.data && res.data.flag) {
+              _self.$message({
+                message: '删除成功',
+                type: 'success'
+              });
+              _self.getScheduleList();
+            } else {
+              _self.$message({
+                message: res.data.msg,
+                type: 'warning'
+              });
+            }
+          }).catch(function (err) {
+            console.log(err);
+          })
+        }).catch(function (err) {
+          console.log(err);
+        });
+      },
+      /**
+       * 切换每页条数
+       * @params {Number} val 每页条数
+       */
+      handleSizeChange(val) {
+        this.tabPage.pageSize = val;
+        this.getScheduleList();
+      },
+      /**
+       * 切换页码
+       * @params {Number} val 页码
+       */
+      handleCurrentChange(val) {
+        this.tabPage.currentPage = val;
+        this.getScheduleList();
+      },
+      /**
+       * 多选框改变选中事件
+       * @params {Array} val 当前所有选中行对象数组
+       */
+      handleSelectionChange(val) {
+        this.multipleSelection = val;
+        this.sels = val;
+      },
+      /**
+       * 批量删除操作
+       */
+      batchRemove(){
+        var _self = this;
+        var arr = _self.sels;
+        if (arr.length > 0) {
+          _self.deleteScheduleInfo({params: arr});
+        } else {
+          _self.$message({
+            message: '请选择班次',
+            type: 'warning'
+          });
+        }
+
+      },
+      /**
+       * 编辑按钮点击事件
+       * @params {Number} index  行号
+       * @params {Object} row 行对象
+       */
+      handleEdit(index, row) {
+        this.dialogInfo = true;
+        this.formTitle = "编辑部门信息";
+        var newrow = {
+          id: row.id,
+          atdSchedule_name: row.name,
+          atdSchedule_work_date: new Date(moment(row.work_date).format('YYYY-MM-DD HH:mm:ss')),
+          atdSchedule_off_date: new Date(moment(row.off_date).format('YYYY-MM-DD HH:mm:ss')),
+//          atdSchedule_work_date: moment(row.work_date).format('YYYY-MM-DD HH:mm:ss'),
+//          atdSchedule_off_date: moment(row.off_date).format('YYYY-MM-DD HH:mm:ss'),
+        }
+        this.form = Object.assign({}, newrow);
+        console.log(this.form)
+      },
+      /**
+       * 点击新增按钮
+       */
+      handleAdd(){
+        this.dialogInfo = true;
+        this.formTitle = "新增班组";
+        this.form = Object.assign({}, {
+          atdSchedule_name: '',
+          work_date: '',
+          atdSchedule_work_date: '',
+          atdSchedule_off_date: ''
+        });//初始化
+        console.log(this.form)
+      },
+      /**
+       * 表单重置
+       * @params {Object} formName 表单名称
+       */
+      resetForm(formName){
+        this.$refs[formName].resetFields();
+      },
+      dateFormatter(row, column){
+        return moment(row.work_date).format('H:mm:ss');
+      },
+      dateFormatter2(row, column){
+        return moment(row.off_date).format('H:mm:ss');
+      },
+      /**
+       * 保存班次信息
+       * @params {String} formName 用于验证
+       */
+      submitForm(formName){
+        var _self = this;
+        var parms = {}
+        if (_self.form.id) {
+          parms.id = _self.form.id;
+        }
+        parms.name = _self.form.atdSchedule_name;
+        parms.work_date = moment(_self.form.atdSchedule_work_date).format('YYYY-MM-DD HH:mm:ss');
+        parms.off_date = moment(_self.form.atdSchedule_off_date).format('YYYY-MM-DD HH:mm:ss');
+        parms.hours = _self.hours;
+        this.$refs[formName].validate((valid) => {
+          if (valid) {
+            _self.$http.post('/business/atdSchedule/savescheduleinfo', parms)
+              .then(function (res) {
+                console.log(res)
+                if (res.data && res.data.flag) {
+                  _self.dialogInfo = false;
+                  _self.$message({
+                    message: '提交成功',
+                    type: 'success'
+                  });
+                  _self.getScheduleList();
+                } else {
+                  _self.$message({
+                    message: res.data.msg,
+                    type: 'warning'
+                  });
+                }
+              })
+              .catch(function (error) {
+                console.log(error);
+              });
+          } else {
+            console.log('提交错误');
+            return false;
+          }
+        });
+      },
+      async getScheduleList(params){
+        var _self = this;
+        _self.loading = true;
+        var data = {
+          page: this.tabPage.currentPage,
+          pageSize: this.tabPage.pageSize,
+          org_name: this.formInline.org_name
+        };
+        if (params) {
+          data = params;
+        }
+        this.$http.get('/business/atdSchedule/getschedulelist', {params: data})
+          .then(function (res) {
+            if (res.data && res.data.flag) {
+              var d = res.data.data;
+              _self.atdScheduleTableData = d.rows;
+              _self.tabPage.totalNum = d.count;
+              _self.loading = false;
+            }
+          }).catch(function (error) {
+          _self.loading = false;
+          console.log(error)
+        });
+      },
+    },
+    components: {
+      paging
+    },
+    created() {
+      console.log('created')
+      this.getScheduleList();
+    },
+    mounted() {
+      console.log('mounted')
+    },
+    updated() {
+      console.log('updated')
+    },
+    computed: {
+      hours: function () {
+        if (this.form.atdSchedule_off_date !== '' && this.form.atdSchedule_work_date !== '' && this.form.atdSchedule_off_date !== undefined && this.form.atdSchedule_work_date !== undefined) {
+          var relDate = (new Date(this.form.atdSchedule_off_date)).getTime() - (new Date(this.form.atdSchedule_work_date)).getTime()
+          var leave1 = relDate % (24 * 3600 * 1000);
+          var hours = Math.floor(leave1 / (3600 * 1000));
+          var leateave2 = leave1 % (3600 * 1000)        //计算小时数后剩余的毫秒数
+          var minutes = Math.floor(leateave2 / (60 * 1000))
+          return hours + '小时' + minutes + '分钟'
+        } else {
+          return 0
+        }
+
+      },
+      options: function () {
+        return {minTime: this.form.atdSchedule_work_date}
+      }
+    }
+  }
+</script>
+
+<!-- 添加 "scoped " css作用域只作用于本文件，不作用全局-->
+<style scoped>
+
+</style>

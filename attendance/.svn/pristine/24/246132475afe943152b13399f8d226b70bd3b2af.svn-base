@@ -1,0 +1,89 @@
+/**
+ * Created by Jessi on 2017/7/10.
+ */
+const AjaxJson = require('../../../utils/AjaxJson');
+const PersonService = require('../../../service/api/personService');
+module.exports = {
+    get_index: function (req, res) {
+        res.send({msg: 'home api'});
+    },
+    get_personalstats:function(req,res){
+        const aj = new AjaxJson();
+        req.query = {
+            policeid:'c5055490-61e7-11e7-95c0-0b745660720c',
+            month:new Date()
+        };
+        if(req.query&&Object.keys(req.query).length>0){
+            if(req.query.policeid&&req.query.month){
+                PersonService.personalStats(req.query,function(ret){
+                    res.send(ret);
+                })
+            }else{
+                aj.msg = "参数错误";
+                res.send(aj); 
+            }
+        }else{
+            aj.msg = "没有相关参数";
+            res.send(aj);
+        }
+    },
+    get_personalinfo:function(req,res){//查询用户信息
+        const aj = new AjaxJson();
+        if(req.query&&Object.keys(req.query).length>0){
+            if(req.query.policeid){
+                PersonService.personalInfo(req.query,function(ret){
+                    res.send(ret);
+                })
+            }else{
+                aj.success = false;
+                aj.msg = "参数错误";
+                res.send(aj); 
+            }
+        }else{
+            aj.success = false;
+            aj.msg = "没有相关参数";
+            res.send(aj);
+        }
+    },
+    post_changepsd:function(req,res){//修改密码
+        const aj = new AjaxJson();
+        if(req.body&&Object.keys(req.body).length>0){
+            if(req.body.policeid&&req.body.oldPsd&&req.body.newPsd){
+                PersonService.changePsd(req.body,function(ret){
+                    res.send(ret);
+                })
+            }else{
+                aj.success = false;
+                aj.msg = "参数错误";
+                res.send(aj); 
+            }
+        }else{
+            aj.success = false;
+            aj.msg = "没有相关参数";
+            res.send(aj);
+        }
+    },
+    post_uploadavatar:function(req,res){//用户头像上传
+        PersonService.uploadAvatar(req,function(ret){
+            res.send(ret);
+        })
+    },
+    post_locationrecord: function (req, res) {//保存用户位置信息
+        const aj = new AjaxJson();
+        if (req.body && Object.keys(req.body).length > 0) {
+            if (req.body.policeid) {
+                PersonService.saveLocationRecord(req.body, function (ret) {
+                    res.send(ret);
+                })
+            } else {
+                aj.success = false;
+                aj.msg = '没有用户id';
+                callback(aj);
+            }
+        } else {
+            aj.success = false;
+            aj.msg = '没有参数';
+            callback(aj);
+        }
+    }
+};

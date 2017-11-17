@@ -1,0 +1,534 @@
+<template>
+  <div v-loading="isloading">
+      <!--查询 -->
+      <el-form :inline="true" :model="formInline" class="demo-form-inline" ref="formInline">
+        <el-form-item label="警员姓名" prop="police_name">
+          <el-input size="mini" v-model="formInline.police_name" placeholder="请输入警员姓名"></el-input>
+        </el-form-item>
+        <el-form-item>
+          <el-button size="mini" type="primary" icon="search" @click="onSearch('formInline')">查询</el-button>
+          <el-button size="mini" type="info" @click="resetForm('formInline')"><icon name="refresh" class="custom-icon"></icon>重置</el-button>
+          <el-button size="mini" type="success" icon="plus" @click="onAdd()">新增</el-button>
+          <el-button size="mini" type="success" icon="plus" @click="handleBindPolice()">添加已有警员</el-button>
+
+        </el-form-item>
+      </el-form>
+      <el-table
+            :data="policeTableData"
+            highlight-current-row
+            border
+            :height="this.$store.state.gTableHeight"
+            style="width: 100%">
+        <el-table-column
+          prop="police_name"
+          label="警员姓名"
+        >
+        </el-table-column>
+
+        <el-table-column
+          prop="cardid"
+          label="证件号">
+        </el-table-column>
+        <el-table-column
+          prop="code"
+          label="编号">
+        </el-table-column>
+        </el-table-column>
+        <el-table-column label="操作" width="200">
+          <template scope="scope">
+            <el-button
+              size="mini" 
+              type="warning"
+              @click="handleUnbundling(scope.$index, scope.row)"
+            >解绑
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <!--分页 -->
+      <paging @emitsizechange="handleSizeChange"
+              @emitcurrentchange="handleCurrentChange"
+              :currentPage="tabPage.currentPage"
+              :pageSizes="tabPage.pageSizes"
+              :pageSize="tabPage.pageSize"
+              :total="tabPage.totalNum"
+      >
+      </paging>
+
+    <police-tab :roleid="roleid" :policeDialog="policeDialog" @close="closeDialog"></police-tab>
+    <el-dialog v-bind:title="formTitle" v-model="dialogEdit" :close-on-click-modal="true" :close-on-press-escape="true"
+               v-on:close="resetForm('ruleForm')">
+      <el-form :model="ruleForm" :rules="this.$validateRule" ref="ruleForm" label-width="80px">
+        <el-form-item label="警员姓名" prop="police_name">
+          <el-input size="small" v-model="ruleForm.police_name"></el-input>
+        </el-form-item>
+
+        <el-form-item label="身份证号" prop="cardid">
+          <el-input size="small" v-model="ruleForm.cardid"></el-input>
+        </el-form-item>
+
+        <el-form-item label="工号" prop="code">
+          <el-input size="small" v-model="ruleForm.code"></el-input>
+        </el-form-item>
+
+        <el-form-item label="手机号码" prop="phone">
+          <el-input size="small" v-model="ruleForm.phone"></el-input>
+        </el-form-item>
+
+        <el-form-item label="年龄" prop="age">
+          <el-input size="small" v-model="ruleForm.age"></el-input>
+        </el-form-item>
+
+        <el-form-item label="性别" prop="gender">
+          <el-radio size="small" class="radio" v-model="ruleForm.gender" label="男">男</el-radio>
+          <el-radio size="small" class="radio" v-model="ruleForm.gender" label="女">女</el-radio>
+        </el-form-item>
+
+        <el-form-item label="登录密码" prop="password">
+          <el-input size="small" v-model="ruleForm.password"></el-input>
+        </el-form-item>
+
+
+        <el-form-item label="警员状态" prop="status">
+          <el-select size="small" v-model="ruleForm.status" placeholder="请选择">
+              <el-option
+                  v-for="(item,index) in jyzt"
+                  :label="item.typename"
+                  :value="item.typename"
+                  :key="index">
+              </el-option>
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="备注信息" prop="remarks">
+          <el-input size="small" type="textarea" v-model="ruleForm.remarks"></el-input>
+        </el-form-item>
+
+        <el-form-item label="头像" style="width:30%">
+          <div @click='chooseImg' class="el-upload">
+            <img v-if="image.src" :src="image.src" class="avatar">
+            <i v-else class="avatar-uploader-icon el-icon-plus"></i>
+            <!--<el-input v-model="ruleForm.imgsrc" class="input_file"></el-input> prop="imgsrc"-->
+            <input id="upload_img" type="file" @change="onFileChange" class="input_file" accept="image/*"/>
+          </div>
+          <i class="el-icon-close removeIcon" v-if="image.src" @click="removeImg" title="移除" type="success"></i>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button size="mini" @click="dialogEdit=false">取 消</el-button>
+        <el-button size="mini" type="primary" @click="submitForm('ruleForm')">确 定</el-button>
+      </div>
+    </el-dialog>
+  </div>
+</template>
+
+<script>
+  import paging from '../../common/Paging.vue'
+  import policeTab from './policeDialog.vue'
+  export default {
+    components: {
+      paging,policeTab
+    },
+    data() {
+      return {
+        formInline: {
+          police_name: '',
+        },
+        formTitle: '警务人员',
+        dialogEdit: false, //编辑模态
+        dialogInfo: false, //详情模态
+        detailTitle: '警员详细信息',
+        detailArr: [], //详情数组
+        policeDialog:false,//已有警员列表弹窗
+        ruleForm: {},//表单数据
+        tabPage: {     //分页信息
+          currentPage: 1,
+          pageSize: 10,
+          pageSizes: [10, 20, 30, 50]
+        },
+        orgs: [],
+        atd_groups: [],
+        policeTableData: [],
+        loading: true,
+        jyzt:[],
+        image: {},//图片流预览图片
+        ServerimageUrl: 'http://localhost:3008/',//后台地址
+      }
+    },
+    props:['roleid','isloading'],
+    created() {
+      this._get_pl_org();
+      this._get_atd_group();
+    },
+    mounted() {
+      this.jyzt = this.getDicData('jyzt');
+    },
+    watch:{
+        roleid:function(){
+            this.getPoliceListByRole();
+        },
+        isloading:function(){
+          if(this.isloading){
+            setTimeout(() => {
+                this.$emit('changeList',false);
+            }, 500);
+          }
+        }
+    },
+    methods: {
+      getDicData(str){//获取数据字典相关内容
+            var dicList = JSON.parse(this.$getStore("gDictionaryList"))
+            var filterarray = $.grep(dicList, function (value) {
+                return value.typegroupcode === str;//筛选出其中一个，仍为一个数组
+            });
+            if (filterarray.length > 0) {//防止前端报错
+                return filterarray[0].typeList;
+            }
+        },
+      /**
+       * 根据角色获取警员列表
+       *
+       */
+      getPoliceListByRole(){
+        var _self = this;
+        var data = {
+          page: this.tabPage.currentPage,
+          pageSize: this.tabPage.pageSize,
+          police_name: this.formInline.police_name,
+          roleid:this.roleid
+        };
+        this.$http.get('/business/plrole/getplistbyrole', {params: data}).then(function (res) {
+          if (res.data && res.data.success) {
+            var d = res.data.result;
+            _self.policeTableData = d.rows;
+            _self.tabPage.totalNum = d.count;
+          }else{
+             _self.$message({
+                message: res.data.msg,
+                type: 'warning'
+              });
+          }
+        }).catch(function (err) {
+          console.log(err);
+        })
+      },
+      onSearch(formInline) {
+        this.getPoliceListByRole()
+      },
+      onAdd() {
+        this.dialogEdit = true;
+        this.ruleForm = Object.assign({}, {
+          police_name: '',
+          cardId: '',
+          code: '',
+          phone: '',
+          age: '',
+          gender: '男',
+          password: '',
+          pl_orgid: '',
+          atd_groupid: '',
+          status:undefined
+        })
+      },
+      /**
+       * 保存表单
+       * @param formName 表单名称
+       *
+       */
+      submitForm(formName){
+        var _self = this
+        var params = _self.ruleForm;
+        for (var i = 0; i < _self.orgs.length; i++) {
+          if (_self.ruleForm.pl_orgid == _self.orgs[i].org_name) {
+            _self.ruleForm.pl_orgid = _self.orgs[i].id
+          }
+        }
+        this.$refs[formName].validate((valid) => {
+          if (valid) {
+            if (_self.image.src) {
+              _self.savePoliceAndImg(params)
+            } else {
+              _self.savePoliceInfo(params)
+            }
+          } else {
+            console.log('提交错误');
+            return false;
+          }
+        });
+      },
+      chooseImg(){
+        $('input[type=file]').trigger('click')
+        return false
+      },
+      /**
+       * 图片选择change事件
+       *
+       */
+      onFileChange(e){
+        var files = e.target.files || e.dataTransfer.files
+        const isImg = files[0].type.substr(0, 5)
+        const isLt2M = files[0].size / 1024 / 1024 < 2
+        if (isImg != 'image') {
+          this.$message.error('只能上传图片！')
+        }
+        if (!isLt2M) {
+          this.$message.error('上传图片大小不能超过2M！')
+        }
+        if (isImg === 'image' && isLt2M) {
+          if (!files.length) return
+          this.createImage(files)
+        }
+        return isImg === 'image' && isLt2M
+
+      },
+      createImage(files){
+        var vm = this
+//        var reader = null
+//        reader = new window.FileReader()
+//        reader.readAsDataURL(files[0])
+//        console.log(reader.readAsDataURL(files[0]))
+//        reader.onload = function(e){
+//              vm.image = {src: e.target.result}
+//        }
+        for (let file of files) {
+          let reader = new FileReader();
+          reader.onload = function (e) {
+            // Render thumbnail.
+            vm.image = {src: e.target.result}
+          };
+          // Read in the image file as a data URL.
+          reader.readAsDataURL(file);
+
+        }
+//        for(let file of files){
+//              let img = new Image
+//          img.src= URL.createObjectURL(file)
+//          img.title = file.name
+//          vm.image = {src: img.src}
+//        }
+      },
+      removeImg(){
+        $('#upload_img').val('')
+        this.image = {}
+      },
+      /**
+       * 删除按钮点击事件
+       * @params {Number} index   行号
+       * @params {Object} row     行对象
+       */
+      handleUnbundling(index, row) {
+        var params = {
+          roleid:this.roleid,
+          policeid:row.id
+        };
+        var _self = this;
+        this.$confirm('此操作将解除该警员与角色绑定,是否继续？', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          _self.$http.post('/business/plrole/unbundlingrole',params).then(function (res) {
+            if (res.data && res.data.success) {
+              _self.$message({
+                message: '操作成功',
+                type: 'success'
+              })
+              _self.getPoliceListByRole();
+            } else {
+              _self.$message({
+                message: '删除失败',
+                type: 'error'
+              })
+            }
+          }).catch(function (err) {
+            console.log(err)
+
+          })
+        }).catch(() => {
+
+        })
+
+      },
+      /**
+       * 表单重置
+       * @params {Object} formName 表单名称
+       */
+      resetForm(formName){
+        this.$refs[formName].resetFields();
+        if(formName=='formInline'){
+          this.getPoliceListByRole();
+        }
+      },
+      /**
+       * 切换每页条数
+       * @params {Number} val 每页条数
+       */
+      handleSizeChange(val) {
+        this.tabPage.pageSize = val;
+        this.getPoliceListByRole();
+      },
+      /**
+       * 切换页码
+       * @params {Number} val 页码
+       */
+      handleCurrentChange(val) {
+        this.tabPage.currentPage = val;
+        this.getPoliceListByRole();
+      },
+      /**
+       * 获取归属机构组
+       */
+      _get_pl_org(){
+        var _self = this
+        _self.$http.get('/business/policemanage/getplorg').then(function (res) {
+
+          if (res.data && res.data.flag) {
+
+            _self.orgs = res.data.data
+
+          }
+
+        }).catch(function (err) {
+          console.log(err)
+        })
+      },
+      _get_atd_group(){
+        var _self = this
+        _self.$http.get('/business/policemanage/getatdgroup').then(function (res) {
+          if (res.data && res.data.flag) {
+            _self.atd_groups = res.data.data
+
+          }
+
+        }).catch(function (err) {
+          console.log(err)
+        })
+      },
+      handleBindPolice(){
+        this.policeDialog = true;
+      },
+      closeDialog(d){
+        this.policeDialog = d.dialog;
+        if(d.status){
+          this.getPoliceListByRole();
+        }
+      },
+      //保存信息无图片
+      savePoliceInfo(data){
+        data.roleid = this.roleid;
+        var _self = this
+        _self.$http.post('/business/plrole/savepoliceinfoandpr', data)
+          .then(function (res) {
+            if (res.data && res.data.success) {
+              _self.dialogEdit = false;
+              _self.$message({
+                message: '操作成功',
+                type: 'success'
+              });
+              _self.getPoliceListByRole();
+            } else {
+              _self.$message({
+                message: res.data.msg,
+                type: 'warning'
+              });
+            }
+          })
+          .catch(function (error) {
+            console.log(error);
+          });
+      },
+      /**
+       *角色管理保存带图片上传
+       *@data {Object}
+       *
+       */
+      savePoliceAndImg(data){
+        var _self = this
+        var formData = new FormData()
+        var file = document.getElementById("upload_img").files[0]
+
+
+        formData.append('file', file) //file就是图片或者文件
+        var _self = this
+        $.each(_self.ruleForm, function (i, val) {
+          if (val != null) {
+            formData.append(i, val)
+          }
+        })
+        formData.append('roleid',this.roleid);
+        _self.$http.post('/business/plrole/savepoliceimginfoandpr', formData).then(function (res) {
+          console.log(res)
+          if (res.data && res.data.success) {
+            _self.dialogEdit = false;
+            _self.$message({
+              message: '操作成功',
+              type: 'success'
+            });
+            _self.getPoliceListByRole();
+          } else {
+            _self.$message({
+              message: res.data.msg,
+              type: 'warning'
+            });
+          }
+        }).catch(function (err) {
+          console.log(err);
+        })
+      },
+
+    }
+  }
+</script>
+
+<style scoped>
+  .input_file {
+    display: none;
+  }
+
+  /*img{*/
+  /*width:150px;*/
+  /*height:150px;*/
+  /*}*/
+  .el-upload {
+    display: inline-block;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  .el-upload {
+    border: 1px dashed #d9d9d9;
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .avatar-uploader-icon {
+    font-size: 28px;
+    color: #8c939d;
+    width: 100%;
+    height: 108px;
+    line-height: 108px;
+    text-align: center;
+  }
+
+  .avatar {
+    width: 108px;
+    height: 108px;
+    display: block;
+  }
+
+  .removeIcon {
+    position: absolute;
+    z-index: 99;
+    right: 2px;
+    top: 2px;
+    background-color: ghostwhite;
+  }
+
+  .el-dialog .el-form .el-form-item {
+    width: 90%
+  }
+</style>

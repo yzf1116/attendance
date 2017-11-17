@@ -1,0 +1,75 @@
+/**
+ * Created by yangzhenfang on 2017/07/12.
+ */
+var async             =  require('async')
+var AjaxJson          =  require('../../utils/AjaxJson')
+var modelReviewRecord =  db['review_record']
+
+//获取审批记录
+exports.approveRecord = async (data, callback) => {
+    var aj = new AjaxJson()
+    data.start = (parseInt(data.page) - 1) * parseInt(data.pageSize)
+    var where = {}
+    if (data.approver != undefined) {
+        where = {
+            approver: {
+                $like: '%' + data.approver + '%'
+            }
+        }
+    }
+    try {
+        var reviewRecord = await modelReviewRecord.findAndCountAll({
+            where: where,
+            limit: parseInt(data.pageSize),
+            offset: parseInt(data.start)
+        })
+        if (!reviewRecord) {
+            aj.success = false
+            aj.msg = '查询错误'
+            callback(aj)
+            return
+        }
+        aj.success = true
+        aj.msg = '查询成功'
+        aj.result = reviewRecord
+        callback(aj)
+
+    } catch (err) {
+        aj.success = false
+        aj.msg = `${err.name}:数据库查询失败`
+    }
+}
+//删除审批记录信息
+exports.delApproveRecord = async (data, callback) => {
+    var where = {};
+    var arr = [];
+
+    if(data.params){
+        var _list = data.params;
+        for (var i in _list) {
+            arr.push(_list[i].id);
+        }
+        where = {id: {$in: arr}};
+    }else {
+        where = {id: data.id};
+    }
+    var aj = new AjaxJson()
+    try {
+        var delRecordInfo = await modelReviewRecord.destroy({where: where})
+        if (!delRecordInfo) {
+            aj.success = false
+            aj.msg = '查询参数不对'
+            callback(aj)
+            return
+        }
+        aj.success = true
+        aj.msg = '删除成功'
+        aj.result = delRecordInfo
+        callback(aj)
+
+    } catch (err) {
+        aj.success = false
+        aj.msg = `${err.name}:数据库数据删除失败`
+        callback(aj)
+    }
+}

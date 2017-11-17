@@ -1,0 +1,237 @@
+<template>
+    <div>
+       
+        <!--dialog-->
+        <el-dialog title="绑定已有警员" v-model="policeDialog" :close-on-click-modal="false" :show-close="false">
+            <el-form :inline="true" :model="formInline" class="demo-form-inline" ref="formInline">
+                <el-form-item label="警员姓名" prop="police_name">
+                    <el-input size="mini" v-model="formInline.police_name" placeholder="警员姓名"></el-input>
+                </el-form-item>
+                <el-form-item>
+                    <el-button size="mini" type="primary" icon="search" @click="onSearch()">查询</el-button>
+                    <el-button size="mini" type="info" @click="resetForm('formInline')"><icon name="refresh" class="custom-icon"></icon>重置</el-button>
+
+                </el-form-item>
+            </el-form>
+            <!--表单-->
+          <el-table
+            :data="policeTableData"
+            highlight-current-row
+            border
+            v-loading="loading"
+            :height="350"
+            @selection-change="handleSelectionChange"
+            style="width: 100%">
+        <el-table-column
+            type="selection"
+        >
+        </el-table-column>
+        <el-table-column
+          prop="police_name"
+          label="警员姓名"
+        >
+        </el-table-column>
+
+        <el-table-column
+          prop="cardid"
+          label="证件号">
+        </el-table-column>
+        <el-table-column
+          prop="code"
+          label="工号">
+        </el-table-column>
+      </el-table>
+        <paging @emitsizechange="handleSizeChange"
+                @emitcurrentchange="handleCurrentChange"
+                :currentPage="tabPage.currentPage"
+                :pageSizes="tabPage.pageSizes"
+                :pageSize="tabPage.pageSize"
+                :total="tabPage.totalNum">
+        </paging>
+        <div slot="footer" class="dialog-footer">
+            <el-button size="mini" @click="close()">取 消</el-button>
+            <el-button size="mini" type="primary" @click="submitForm">确 定</el-button>
+        </div>
+        </el-dialog>
+      
+
+        <router-view></router-view>
+    </div>
+</template>
+
+<script>
+    import paging from '../../common/Paging.vue'
+    export default {
+        data(){
+            return {
+                policeTableData: [],//用户列表数组
+                sels:[],//列表选中项
+                tabPage: {
+                    currentPage: 1,
+                    pageSize: 10,
+                    pageSizes: [10, 20, 30, 50]
+                },//分页信息
+                loading: true,
+                ruleForm: {},//新增表单数据
+                options: [],//部门数组
+                formInline:{
+                    police_name:''
+                }
+
+            }
+        },
+        props: ['roleid','policeDialog'],
+        created: function () {
+
+        },
+        mounted: function () {
+            this.openScreen();
+        },
+        components: {
+            paging
+        },
+        computed: {},
+        watch:{
+            // roleid:function(){
+            //     this.getPoliceListNotBindRole();
+            // },
+            policeDialog:function(){
+                this.getPoliceListNotBindRole();
+            }
+        },
+        methods: {
+            /**
+             * 加载动画
+             */
+            openScreen() {//加载...
+                this.loading = true;
+                setTimeout(() => {
+                    this.loading = false;
+            }, 200);
+            },
+            getPoliceListNotBindRole(params){
+                var data = {
+                    page: this.tabPage.currentPage,
+                    pageSize: this.tabPage.pageSize,
+                    options:this.formInline,
+                    roleid:this.roleid
+                };
+                if (params) {
+                    data = params;
+                }
+                var _self = this;
+                this.$http.get('/business/role/getpolicenotbindrole', {params: data})
+                    .then(function (res) {
+                        if (res.data && res.data.success) {
+                            var d = res.data.result;
+                            _self.policeTableData = d.rows;
+                            _self.tabPage.totalNum = d.count;
+                        }
+                    }).catch(function (error) {
+                    console.log(error);
+                    _self.$message({
+                        message: '获取失败',
+                        type: 'warning'
+                    });
+                });
+            },
+            /**
+             * 查询 根据用户名模糊查询
+             */
+            onSearch(){
+                var params = {options:this.formInline};
+                params.roleid = this.roleid;
+                params.page = 1;
+                params.pageSize = this.tabPage.pageSize;
+                this.tabPage.currentPage =1;//每次查询默认第一页
+                this.getPoliceListNotBindRole(params);
+            },
+            /**
+             * 保存用户角色关联信息
+             * @params {String} formName 用于验证
+             */
+            submitForm(){
+                var arr = [];
+                for(var i=0;i<this.sels.length;i++){
+                    arr.push(this.sels[i].id);
+                }
+                var _self = this;
+                var params = {
+                    roleid:this.roleid,
+                    policeList:arr
+                }
+                if(this.sels.length>0){
+                    this.$http.post('/business/role/saverolepolice', params)
+                        .then(function (res) {
+                        
+                            if (res.data && res.data.success) {
+                                _self.getPoliceListNotBindRole();
+                                _self.$emit('close',{dialog:false,status:'change'});
+                                _self.$message({
+                                    message: res.data.msg,
+                                    type: 'success'
+                                });
+                            } else {
+                                _self.$message({
+                                    message: res.data.msg,
+                                    type: 'error'
+                                });
+                            }
+
+                        })
+                        .catch(function (error) {
+                            _self.$message({
+                                message: '请求错误',
+                                type: 'error'
+                            });
+                            console.log(error);
+                        });
+
+                }else{
+                    _self.$message({
+                        message: '请选择警员',
+                        type: 'warning'
+                    });
+                }
+              
+                   
+            },
+            /**
+             * 切换每页条数
+             * @params {Number} val 每页条数
+             */
+            handleSizeChange(val) {
+                this.tabPage.pageSize = val;
+                this.getPoliceListNotBindRole();
+            },
+            /**
+             * 切换页码
+             * @params {Number} val 页码
+             */
+            handleCurrentChange(val) {
+                this.tabPage.currentPage = val;
+                this.getPoliceListNotBindRole();
+            },
+            handleSelectionChange(val) {
+                this.multipleSelection = val;
+                this.sels = val;
+            },
+            close(){
+                this.sels = [],
+                this.formInline = {police_name:''};
+                this.$emit('close',{dialog:false});
+            },
+            /**
+            * 表单重置
+            * @params {Object} formName 表单名称
+            */
+            resetForm(formName){
+                this.$refs[formName].resetFields();
+            },
+        }
+    }
+</script>
+
+<style scoped>
+ 
+</style>

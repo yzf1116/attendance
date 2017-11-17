@@ -1,0 +1,8 @@
+export const state = {
+    getCount:10,
+    gDictionaryList: {}, //字典
+    gLogin: true,
+    gFormDataList: {}, //表单缓存
+    gTableHeight: 500, //表单高度
+
+}

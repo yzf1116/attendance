@@ -1,0 +1,29 @@
+/**
+ * Created by yangzhenfang on 2017/07/11.
+ */
+var approve = require('../../../service/approve/ApproveService')
+module.exports = {
+    //获取审批记录列表接口
+    get_approverecord: function (req, res) {
+        if (req.query && Object.keys(req.query).length != 0) {
+            approve.approveRecord(req.query, function (ret) {
+                console.log(ret)
+                res.send(ret)
+            })
+        } else {
+            res.send({flag: false, msg: '未接收到相关查询参数'})
+        }
+
+    },
+    //删除审批记录
+    post_delapproverecord: function(req,res){
+        if (req.body && Object.keys(req.body).length != 0) {
+
+            approve.delApproveRecord(req.body, function (ret) {
+                res.send(ret)
+            })
+        } else {
+            res.send({flag: false, msg: '未接收到参数'})
+        }
+    }
+}

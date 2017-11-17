@@ -1,0 +1,870 @@
+<template>
+  <div class="policeManage">
+    <div class="tabPosition">
+      <!--查询 -->
+      <el-form :inline="true" :model="formInline" class="demo-form-inline" ref="formInline">
+        <el-form-item label="警员姓名" prop="police_name">
+          <el-input size="mini" v-model="formInline.police_name" placeholder="请输入警员姓名"></el-input>
+        </el-form-item>
+        <el-form-item>
+          <el-button size="mini" type="primary" icon="search" @click="onSearch('formInline')">查询</el-button>
+          <el-button size="mini" type="info" @click="resetForm('formInline')">
+            <icon name="refresh" class="custom-icon"></icon>
+            重置
+          </el-button>
+
+          <el-button size="mini" type="success" icon="plus" @click="onAdd()">新增</el-button>
+          <!--<el-button type="danger" icon="delete2" @click="onDelete()">删除</el-button>-->
+        </el-form-item>
+      </el-form>
+
+      <el-table
+        :data="policeTableData"
+        border
+        v-loading="loading"
+        :height="this.$store.state.gTableHeight"
+        align="center"
+        style="width: 100%">
+
+        <el-table-column
+          prop="police_name"
+          label="警员姓名"
+        >
+        </el-table-column>
+
+        <el-table-column
+          prop="code"
+          label="编号">
+        </el-table-column>
+        <el-table-column
+          prop="phone"
+          label="电话">
+        </el-table-column>
+
+        <el-table-column
+          prop="gender"
+          label="性别"
+          width="80">
+        </el-table-column>
+        <el-table-column
+          prop="pl_orgid"
+          label="归属机构">
+        </el-table-column>
+        <el-table-column
+          label="是否可登录"
+
+        >
+          <template scope="scope">
+            <el-switch
+              v-model="scope.row.login_flag"
+              on-value="1"
+              off-value="0"
+              on-text="是"
+              off-text="否"
+              :disabled="scope.row.username === 'admin'"
+              @change="changeStatus(scope.$index, scope.row)"
+            >
+            </el-switch>
+          </template>
+        </el-table-column>
+
+        <el-table-column label="操作">
+          <template scope="scope">
+            <el-button
+              size="mini"
+              @click="handleEdit(scope.$index, scope.row)"
+              type="primary"
+            >编辑
+            </el-button>
+            <el-button
+              size="mini"
+              @click="handleInfo(scope.$index, scope.row)"
+              type="warning">详情
+            </el-button>
+            <el-button
+              size="mini"
+              @click="handleDelete(scope.$index, scope.row)"
+              type="danger"
+            >删除
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <!--分页 -->
+      <paging @emitsizechange="handleSizeChange"
+              @emitcurrentchange="handleCurrentChange"
+              :currentPage="tabPage.currentPage"
+              :pageSizes="tabPage.pageSizes"
+              :pageSize="tabPage.pageSize"
+              :total="tabPage.totalNum"
+      >
+
+      </paging>
+
+    </div>
+
+    <el-dialog v-bind:title="formTitle" v-model="dialogEdit" :close-on-click-modal="false"
+               :close-on-press-escape="false"
+               v-on:close="resetForm('ruleForm')">
+      <el-form :model="ruleForm" :rules="this.$validateRule" ref="ruleForm" label-width="100px"
+      >
+        <el-form-item label="警员姓名" prop="police_name">
+          <el-input size="small" v-model="ruleForm.police_name"></el-input>
+        </el-form-item>
+
+        <el-form-item label="身份证号" prop="cardid">
+          <el-input size="small" v-model="ruleForm.cardid"></el-input>
+        </el-form-item>
+
+        <el-form-item label="工号" prop="code">
+          <el-input size="small" v-model="ruleForm.code"></el-input>
+        </el-form-item>
+
+        <el-form-item label="手机号码" prop="phone">
+          <el-input size="small" v-model="ruleForm.phone"></el-input>
+        </el-form-item>
+        <el-form-item label="出生日期" prop="birth">
+          <el-date-picker
+            v-model="ruleForm.birth"
+            type="date"
+            placeholder="选择日期"
+
+            @change="onAge"
+
+            style="width:100%"
+          >
+          </el-date-picker>
+        </el-form-item>
+        <el-form-item label="年龄" prop="age">
+          <!--<el-input size="small" v-model="ruleForm.age"></el-input>-->
+          <el-select size="small" v-model="ruleForm.age" style="width:100%">
+            <el-option v-for="(item ,index) in ages"
+                       :label="item"
+                       :value="item"
+                       :key="index"></el-option>
+
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="性别" prop="gender">
+          <el-radio size="small" class="radio" v-model="ruleForm.gender" label="男">男</el-radio>
+          <el-radio size="small" class="radio" v-model="ruleForm.gender" label="女">女</el-radio>
+        </el-form-item>
+
+        <el-form-item label="初始登录密码" prop="password">
+          <el-input size="small" v-model="ruleForm.password"></el-input>
+        </el-form-item>
+        <el-form-item label="警员归属机构" prop="status">
+          <el-select size="small" v-model="ruleForm.pl_orgid" style="width:100%">
+            <el-option v-for="(item ,index) in orgs"
+                       :label="item.org_name"
+                       :value="item.id"
+                       :key="index"></el-option>
+
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="警员状态" prop="status">
+          <el-select size="small" v-model="ruleForm.status" style="width:100%">
+            <!--<el-option v-for="item in status" :label="item.label" :value="item.label"-->
+            <!--:key="item.label"></el-option>-->
+            <el-option label="在职" value="1"></el-option>
+            <el-option label="休假" value="2"></el-option>
+            <el-option label="离职" value="3"></el-option>
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="备注信息" prop="remarks">
+          <el-input size="small" type="textarea" v-model="ruleForm.remarks"></el-input>
+        </el-form-item>
+
+        <!--<el-form-item label="头像" style="width:30%">-->
+        <!--<el-upload-->
+        <!--class="avatar-uploader"-->
+        <!--action="http://localhost:3008/business/policemanage/saveinfoimage"-->
+        <!--:show-file-list="false"-->
+        <!--:on-success="handleAvatarSuccess" name="file1">-->
+        <!--<img v-if="image.src" :src="image.src" class="avatar">-->
+        <!--<i v-else class="el-icon-plus avatar-uploader-icon"></i>-->
+        <!--</el-upload>-->
+        <!--</el-form-item>-->
+
+        <el-form-item label="头像" style="width:30%">
+          <div @click='chooseImg'>
+            <img v-if="image.src" :src="image.src" class="avatar">
+            <img v-else class="avatar img_src">
+
+            <!--<el-input v-model="ruleForm.imgsrc" class="input_file"></el-input> prop="imgsrc"-->
+            <input id="upload_img" type="file" name="file1" @change="onFileChange" class="input_file"
+                   accept="image/gif,image/jpeg,image/jpg,image/png"/>
+          </div>
+
+        </el-form-item>
+
+        <!--<el-form-item label="头像" style="width:30%">-->
+        <!--<el-input id="upload_img" type="file" name="file1" @change="onFileChange" class="input_file" accept="image/*"></el-input>-->
+        <!--</el-form-item>-->
+
+        <!--<el-form-item label="头像" style="width:30%">-->
+        <!--<input id="upload_img" type="file" :src="image.src" name="file1" @change="onFileChange"/>-->
+
+        <!--</el-form-item>-->
+
+        <el-form-item>
+          <div style="float: right">
+            <el-button size="mini" @click="dialogEdit=false">取 消</el-button>
+            <el-button size="mini" type="primary" @click="submitForm('ruleForm')">确 定</el-button>
+          </div>
+        </el-form-item>
+      </el-form>
+
+    </el-dialog>
+    <!--详情弹窗 -->
+    <detail-form
+      :dialogDetail="dialogInfo"
+      :detailForm="detailArr"
+      @close="closeDetail"
+      :Title="detailTitle">
+    </detail-form>
+  </div>
+</template>
+
+<script type="text/ecmascript-6">
+  import paging from '../../common/Paging.vue'
+  import detailForm from '../../common/detailForm.vue'
+  import ElFormItem from "../../../../node_modules/element-ui/packages/form/src/form-item";
+  import ElInput from "../../../../node_modules/element-ui/packages/input/src/input";
+  import {dateFormat,setDays} from '../../../assets/js/date.js'
+
+  export default {
+    components: {
+      ElInput,
+      ElFormItem,
+      paging, detailForm
+    },
+    data() {
+      return {
+        formInline: {
+          police_name: '',
+        },
+        formTitle: '警务人员',
+        dialogEdit: false, //编辑模态
+        dialogInfo: false, //详情模态
+        detailTitle: '警员详细信息',
+        detailArr: [], //详情数组
+        ruleForm: {
+          police_name: '',
+          cardid: '',
+          code: '',
+          phone: '',
+          birth: '',
+          age: null,
+          gender: '男',
+          remarks: '',
+          pl_orgid: '',
+          atd_groupid: ''
+        },
+        tabPage: {     //分页信息
+          currentPage: 1,
+          pageSize: 10,
+          pageSizes: [10, 20, 30, 50]
+        },
+        orgs: [],
+        ages: [
+          0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+          11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+          21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+          31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+          41, 42, 43, 44, 45, 56, 47, 48, 49, 50,
+          51, 52, 53, 54, 55, 56, 57, 58, 59, 60,
+          61, 62, 63, 64, 65, 66, 67, 68, 69, 70,
+          71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
+          81, 82, 83, 84, 85, 86, 87, 88, 89, 90,
+          91, 92, 93, 94, 95, 96, 97, 98, 99, 100,
+          101, 102, 103, 104, 105, 106, 107, 108, 109, 110
+        ],
+        atd_groups: [],
+        policeTableData: [],
+        loading: true,
+        islogin: [
+          {value: '1', label: '可登录'},
+          {value: '0', label: '禁止登录'}
+        ],
+        status: [
+          {value: '1', label: '在职'},
+          {value: '2', label: '休假'},
+          {value: '3', label: '离职'}
+        ],
+        del_flag: [
+          {value: '0', label: '未删除'},
+          {value: '1', label: '删除'}
+        ],
+        image: {},//图片流预览图片
+        ServerimageUrl: 'http://localhost:3008/',//后台地址
+      }
+    },
+    created() {
+      this._get_pl_org()
+      this._get_atd_group()
+      this._policeListData()
+
+    },
+    mounted() {
+      this.openloading()
+      /**
+       * 工作内容：新增警员信息表单中对身份证的合法验证规则的添加，表单中通过出生日期计算得到年龄；
+       *          解决之前困扰的问题：在html中使用ajax跟服务端交互报401错误；
+       *          解决方法：在headers中传递token参数；
+       *          解决弹出窗口弹出时点击遮罩层关闭弹出窗的问题。
+       *
+       */
+    },
+    methods: {
+      openloading() {
+        var vm = this
+        vm.loading = true;
+        setTimeout(() => {
+          vm.loading = false;
+        }, 200)
+      },
+      handleAvatarSuccess(res, file) {
+        this.image = URL.createObjectURL(file.raw);
+      },
+      /**
+       * _policeListData() 警员列表
+       *
+       */
+      _policeListData(){
+        var _self = this;
+        var data = {   //查询参数
+          page: this.tabPage.currentPage,
+          pageSize: this.tabPage.pageSize,
+          police_name: this.formInline.police_name
+        }
+        this.$http.get('/business/policemanage/policelistdata', {params: data}).then(function (res) {
+          if (res.data.result && res.data.success) {
+            var d = res.data.result.rows;
+            _self.tabPage.totalNum = res.data.result.count;
+            for (var i = 0; i < _self.orgs.length; i++) { //根据服务端获取到的归属机构id转换成归属机构name
+              for (var j = 0; j < d.length; j++) {
+                if (_self.orgs[i].id == d[j].pl_orgid) {
+                  d[j].pl_orgid = _self.orgs[i].org_name
+                }
+              }
+            }
+            for (var a = 0; a < _self.atd_groups.length; a++) { //根据服务端获取到的所属组id转换成所属组name
+              for (var b = 0; b < d.length; b++) {
+                if (_self.atd_groups[a].id == d[b].atd_groupid) {
+                  d[b].atd_groupid = _self.atd_groups[a].atd_name
+                }
+              }
+            }
+            for (var m = 0; m < d.length; m++) {  //根据服务端获取到的警员状态
+              for (var n = 0; n < _self.status.length; n++) {
+                if (d[m].status == _self.status[n].value) {
+                  d[m].status = _self.status[n].label
+                }
+
+              }
+
+            }
+            _self.policeTableData = d;
+          }
+        }).catch(function (err) {
+          console.log(err);
+        })
+      },
+      //查询按钮
+      onSearch(formInline) {
+        var vm = this
+        var params = {options: this.formInline};
+        params.page = 1;
+        params.pageSize = this.tabPage.pageSize;
+        this.tabPage.currentPage = 1;//每次查询默认第一页
+        vm.$refs[formInline].validate((valid) => {
+          if (valid) {
+            vm._policeListData(params);
+          } else {
+            console.log('提交错误');
+            return false;
+          }
+        });
+
+      },
+      //根据出生日期计算出年龄
+      onAge(){
+        var vm = this
+        var date = new Date()
+        var br = new Date(vm.ruleForm.birth)
+        var birthday_year = br.getFullYear()
+        var year = date.getFullYear()
+        var userage = year - birthday_year;
+        vm.ruleForm.age = userage
+      },
+      //新增按钮
+      onAdd() {
+        var vm = this
+        vm.dialogEdit = true;
+        vm.image = {}
+        vm.ruleForm = Object.assign({}, {
+          police_name: '',
+          cardid: '',
+          code: '',
+          password: '123456',
+          status: '在职',
+          phone: '',
+          gender: '男',
+          birth: '',
+          age: null,
+          remarks: '',
+          pl_orgid: '',
+          atd_groupid: ''
+        })
+
+
+      },
+      /**
+       * 提交表单数据
+       * @param formName 表单名称
+       *
+       */
+      submitForm(formName){
+        var _self = this
+        var params = _self.ruleForm
+        console.log(typeof params.birth === 'object')
+
+        if(typeof params.birth === 'object'){
+          params.birth = dateFormat(params.birth,'yyyy-MM-dd')
+        }
+
+
+        for (var i = 0; i < _self.orgs.length; i++) {
+          if (_self.ruleForm.pl_orgid == _self.orgs[i].org_name) {
+            _self.ruleForm.pl_orgid = _self.orgs[i].id
+          }
+        }
+
+        this.$refs[formName].validate((valid) => {
+          if (valid) {
+            params.police_name = params.police_name.trim().replace(/\s/g, "")
+            console.log(params)
+            if (params.id != undefined) {
+              var str = "/upload/image/"
+              if (params.sys_annex != null) {
+                var imgpath = params.sys_annex.realpath
+
+                if (_self.image.src) {
+
+                  if (_self.image.src.indexOf(str) > 0) {
+                    console.log("111111111")
+                    _self._savePoliceInfo(params)  //无头像更新
+                  } else {
+                    console.log("2222222")
+                    _self._savePoliceAndImg(params) //有头像更新
+                  }
+                } else {
+                  console.log("33333333")
+                  _self._savePoliceRemoveImg(params)
+                }
+              } else {
+                if (_self.image.src) {
+                  console.log("444444444")
+                  _self._savePoliceAndImg(params)
+
+                } else {
+                  console.log("5555555")
+                  _self._savePoliceInfo(params)
+                }
+              }
+            } else {
+              if (_self.image.src) {
+                console.log("6666666")
+                _self._savePoliceAndImg(params)
+              } else {
+                console.log("777777777")
+                _self._savePoliceInfo(params)
+              }
+            }
+          } else {
+            console.log('提交错误');
+            return false;
+          }
+        });
+      },
+      //保存信息无图片
+      _savePoliceInfo(data){
+        var vm = this
+        vm.$http.post('/business/policemanage/addoreditpolice', data) //新增和编辑（无图片上传）
+          .then(function (res) {
+            if (res.data && res.data.success) {
+              vm.dialogEdit = false;
+              vm.$message({
+                message: '提交成功',
+                type: 'success'
+              });
+              vm._policeListData();
+            } else {
+              vm.$message({
+                message: res.data.msg,
+                type: 'warning'
+              });
+            }
+          })
+          .catch(function (error) {
+            console.log(error)
+          });
+      },
+      /**
+       * 保存带图片上传
+       *
+       *
+       */
+      _savePoliceAndImg(data){
+        var formData = new FormData()
+        var file = document.getElementById("upload_img").files[0]
+        formData.append('file', file) //file就是图片或者文件
+
+        var _self = this
+        $.each(_self.ruleForm, function (i, val) {
+          if (val != null) {
+            formData.append(i, val)
+          }
+        })
+
+        _self.$http.post('/business/policemanage/saveinfoimage', formData).then(function (res) { //提交表单带图片上传
+          if (res.data && res.data.flag) {
+            _self.dialogEdit = false
+            _self.$message({
+              message: '提交成功',
+              type: 'success'
+            });
+            _self._policeListData() //刷新警员列表数据
+          } else {
+            _self.$message({
+              message: res.data.msg,
+              type: 'warning'
+            });
+          }
+        }).catch(function (err) {
+          console.log(err);
+        })
+      },
+      /**
+       * 编辑保存信息删除头像
+       *
+       */
+      _savePoliceRemoveImg(data){
+        var vm = this
+        vm.$http.post('/business/policemanage/saveinforemoveimg', data).then(function (res) {
+          if (res.data && res.data.success) {
+            vm.dialogEdit = flase
+            vm._policeListData()
+            vm.$message({
+              message: '操作成功',
+              type: 'success'
+
+            })
+
+          } else {
+            vm.$message({
+              message: res.data.msg,
+              type: 'warning'
+            })
+          }
+        }).catch(function (err) {
+          console.log(err);
+        })
+      },
+      /**
+       * 编辑警务人员信息
+       *
+       */
+      handleEdit(index, row) {
+         var vm = this
+        row.password = '123456'  //设置默认登录密码
+        vm.dialogEdit = true
+        vm.formTitle = "编辑警务人员信息"
+        vm.ruleForm = Object.assign({}, row)
+        $('#upload_img').val('')
+        vm.image = {}
+        if (row.sys_annex != null) {
+//          var src = row.sys_annex.realpath.substr(7);
+          var src = row.sys_annex.realpath;
+          vm.image = {src: vm.ServerimageUrl + src};
+          vm.ruleForm.imgInfo = row.sys_annex.realpath;
+        }
+      },
+      /**
+       * 详情按钮
+       *
+       */
+      handleInfo(index, row){
+         var vm = this
+        vm.dialogInfo = true;
+        vm.ruleForm = Object.assign({}, row);
+        vm.detailArr = [
+          {name: '警员姓名:', value: row.police_name},
+          {name: '身份证号码:', value: row.cardid},
+          {name: '工号:', value: row.code},
+          {name: '手机号码:', value: row.phone},
+          {name: '年龄:', value: row.age},
+          {name: '生日', value: row.birth},
+          {name: '性别:', value: row.gender},
+          {name: '警员状态:', value: row.status},
+          {name: '备注消息:', value: row.remarks},
+          {name: '头像:', value: vm.myfilter3(row.sys_annex), type: 'image'}
+        ]
+
+      },
+      myfilter3(value){  //获取服务端图片
+        var vm = this
+        if (value != null) {
+//          var imgName = value.realpath.substr(7)
+          var imgName = value.realpath
+          return "<img src=" + vm.ServerimageUrl + imgName + " width='108' height='108'>"
+        } else {
+          return "无"
+        }
+      },
+      //详情弹窗关闭按钮
+      closeDetail(msg){
+        this.dialogInfo = msg
+      },
+      //选择图片
+      chooseImg(){
+        $('input[type=file]').trigger('click')
+        return false
+      },
+      /**
+       * 图片选择change事件
+       *
+       */
+      onFileChange(e){
+        var vm = this
+        var files = e.target.files || e.dataTransfer.files
+        const isImg = files[0].type.substr(0, 5)
+        const isLt2M = files[0].size / 1024 / 1024 < 2
+        if (isImg != 'image') {
+          this.$message.error('只能上传图片！')
+        }
+        if (!isLt2M) {
+          this.$message.error('上传图片大小不能超过2M！')
+        }
+        if (isImg === 'image' && isLt2M) {
+          if (!files.length) return
+          this.createImage(files)
+        }
+        return isImg === 'image' && isLt2M
+
+      },
+      //读取图片操作
+      createImage(files){
+        var vm = this
+//        var reader = null
+//        reader = new window.FileReader()
+//        reader.readAsDataURL(files[0])
+//        console.log(reader.readAsDataURL(files[0]))
+//        reader.onload = function(e){
+//              vm.image = {src: e.target.result}
+//        }
+        for (let file of files) {
+          let reader = new FileReader();
+          reader.onload = function (e) {
+            // Render thumbnail.
+            vm.image = {src: e.target.result}
+          };
+          // Read in the image file as a data URL.
+          reader.readAsDataURL(file);
+
+        }
+      },
+      removeImg(){
+        $('#upload_img').val('')
+        this.image = {}
+      },
+      /**
+       * 删除按钮点击事件
+       * @params {Number} index   行号
+       * @params {Object} row     行对象
+       */
+      handleDelete(index, row) {
+        var params = row
+        params.imgPath = params.sys_annex.realpath
+        var vm = this;
+        this.$confirm('此操作将永久删除该警员信息,是否继续？', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          vm.$http.post('/business/policemanage/deletepolice', params).then(function (res) { //删除警员信息按钮
+            if (res.data && res.data.success) {
+              vm.$message({
+                message: '删除成功',
+                type: 'success'
+              })
+              vm._policeListData()
+            } else {
+              vm.$message({
+                message: '删除失败',
+                type: 'error'
+              })
+            }
+          }).catch(function (err) {
+            console.log(err)
+
+          })
+        }).catch(() => {
+
+        })
+
+      },
+      /**
+       * 更改是否登录状态
+       * @param index
+       * @param row
+       */
+      changeStatus(index, row){
+        var _self = this;
+        var status = row.login_flag == 0 ? '1' : row.login_flag == 1 ? '0' : '1';
+        var params = {
+          id: row.id,
+          login_flag: status
+        }
+        this.$http.post('/business/policemanage/addoreditpolice', params).then(function (res) {
+          console.log(res.data)
+          if (res.data && res.data.success) {
+            _self.$message({
+              message: '状态更新成功',
+              type: 'success'
+            });
+            //_self.getSysUserList();
+          } else {
+            _self.$message({
+              message: '状态更改失败',
+              type: 'error'
+            });
+          }
+        }).catch(function (err) {
+          console.log(err);
+          _self.$message({
+            message: '状态更改失败',
+            type: 'error'
+          });
+        })
+      },
+      /**
+       * 表单重置
+       * @params {Object} formName 表单名称
+       */
+      resetForm(formName){
+        this.$refs[formName].resetFields();
+        if (formName == 'formInline') {
+          this._policeListData()
+        }
+      },
+      /**
+       * 切换每页条数
+       * @params {Number} val 每页条数
+       */
+      handleSizeChange(val) {
+        this.tabPage.pageSize = val;
+        this._policeListData();
+      },
+      /**
+       * 切换页码
+       * @params {Number} val 页码
+       */
+      handleCurrentChange(val) {
+        this.tabPage.currentPage = val;
+        this._policeListData();
+      },
+      /**
+       * 获取归属机构组
+       */
+      _get_pl_org(){
+        var vm = this
+        vm.$http.get('/business/policemanage/getplorg').then(function (res) {
+          if (res.data && res.data.flag) {
+            vm.orgs = res.data.data
+
+          }
+        }).catch(function (err) {
+          console.log(err)
+        })
+      },
+      _get_atd_group(){
+        var vm = this
+        vm.$http.get('/business/policemanage/getatdgroup').then(function (res) {
+          if (res.data && res.data.flag) {
+            vm.atd_groups = res.data.data
+          }
+        }).catch(function (err) {
+          console.log(err)
+        })
+      }
+    }
+  }
+</script>
+
+<style scoped>
+  .tabPosition {
+    float: left;
+    width: 100%;
+  }
+
+  .input_file {
+    display: none;
+  }
+
+  /*img{*/
+  /*width:150px;*/
+  /*height:150px;*/
+  /*}*/
+  .el-upload {
+    display: inline-block;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  .el-upload {
+    border: 1px dashed #d9d9d9;
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .avatar-uploader-icon {
+    font-size: 28px;
+    color: #8c939d;
+    width: 100%;
+    height: 108px;
+    line-height: 108px;
+    text-align: center;
+  }
+
+  .avatar {
+    width: 108px;
+    height: 108px;
+    display: block;
+  }
+
+  .img_src {
+    background-image: url('../../../assets/img/default.jpg');
+    background-size: 108px 108px;
+  }
+
+  .removeIcon {
+    position: absolute;
+    z-index: 99;
+    right: 2px;
+    top: 2px;
+    background-color: ghostwhite;
+  }
+
+  .el-dialog .el-form .el-form-item {
+    width: 90%
+  }
+</style>

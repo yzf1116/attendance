@@ -1,0 +1,439 @@
+<template>
+    <div>
+
+        <el-row :gutter="3">
+            <el-col :xs="tabSize[0]" :sm="tabSize[1]" :md="tabSize[2]" :lg="tabSize[3]">
+            <!--查询-->
+            <el-form :inline="true" :model="formInline" class="demo-form-inline" ref="formInline">
+                <el-form-item label="角色名称" prop="rolename">
+                    <el-input size="small" v-model="formInline.rolename" placeholder="角色名称"></el-input>
+                </el-form-item>
+                <el-form-item>
+                    <el-button size="small" type="primary" icon="search" @click="onSearch('formInline')">查询</el-button>
+                    <el-button size="small" type="success" icon="plus" @click="handleAdd" v-if="btnShow===true">新增</el-button>
+                    <el-button size="small" type="danger" icon="delete" @click="batchRemove" v-if="btnShow===true">批量删除</el-button>
+                </el-form-item>
+            </el-form>
+
+            <!--表单-->
+            <el-table
+                :data="sysRoleTableData"
+                highlight-current-row
+                border
+                v-loading="loading"
+                :height="this.$store.state.gTableHeight"
+                @selection-change="handleSelectionChange"
+                style="width: 100%">
+                <el-table-column
+                    type="selection">
+                </el-table-column>
+                <el-table-column
+                    prop="rolename"
+                    label="角色名称"
+                    sortable>
+                </el-table-column>
+                <el-table-column
+                    prop="rolecode"
+                    label="角色编码"
+                    sortable>
+                </el-table-column>
+                <el-table-column
+                    prop="description"
+                    label="描述">
+                </el-table-column>
+                <el-table-column label="操作" width="300">
+                    <template scope="scope">
+                        <el-button
+                            :disabled="btnShow===true&&scope.row.username==='admin'"
+                            size="small"
+                            @click="handleEdit(scope.$index, scope.row)">编辑
+                        </el-button>
+                        <!--<el-button size="small" @click="handleUsers(scope.$index, scope.row)" type="info">用户</el-button>-->
+                        <el-button size="small" @click="handleUsersTab(scope.$index, scope.row)" type="info">用户</el-button>
+
+                        <el-button
+                            size="small"
+                            @click="handleRights(scope.$index, scope.row)" type="primary">权限
+                        </el-button>
+                        <el-button
+                            size="small"
+                            type="danger"
+                            @click="handleDelete(scope.$index, scope.row)"
+                            :disabled="btnShow===true&&scope.row.username==='admin'">删除
+                        </el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <!--  分页  -->
+            <paging @emitsizechange="handleSizeChange"
+                    @emitcurrentchange="handleCurrentChange"
+                    :currentPage="tabPage.currentPage"
+                    :pageSizes="tabPage.pageSizes"
+                    :pageSize="tabPage.pageSize"
+                    :total="tabPage.totalNum"
+            >
+
+            </paging>
+            </el-col>
+            <el-col :xs="24" :sm="24" :md="8" :lg="8" v-show="tabSize[3]===16&&isMenuList===true">
+                <rights-Tree :roles="rolesList" :dataTree="dataTree" :defaultKey="defaultKey" :btnShow="btnShow" :roleid="roleid" @changeRole="getMenuByRole"></rights-Tree>
+            </el-col>
+            <!--<el-col :xs="24" :sm="24" :md="8" :lg="6" v-show="tabSize[3]===18&&isUserList===true">
+                <user-Tree :roles="rolesList" :userData="userData" :roleid="userRoleid" @changeRoles="getUserList"></user-Tree>
+            </el-col>-->
+            <el-col :xs="24" :sm="24" :md="12" :lg="12" v-show="tabSize[3]===12&&isUserList===true">
+                <user-page :roleid="userRoleid"></user-page>
+            </el-col>
+        </el-row>
+
+       
+
+        <!--dialog-->
+        <el-dialog v-bind:title="formTitle" v-model="dialogInfo" :close-on-click-modal="false" v-on:close="resetForm('ruleForm')" size="tiny">
+            <el-form :model="ruleForm" :rules="this.$validateRule" ref="ruleForm" label-width="110px">
+                <el-form-item label="角色名称" prop="rolename">
+                    <el-input v-model="ruleForm.rolename"></el-input>
+                </el-form-item>
+                <el-form-item label="角色编码" prop="rolecode">
+                    <el-input v-model="ruleForm.rolecode"  placeholder="规则：输入admin代表普通管理员，其他均视为普通用户"></el-input>
+                </el-form-item>
+                <el-form-item label="描述" prop="description">
+                    <el-input type="textarea" v-model="ruleForm.description"></el-input>
+                </el-form-item>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+                <el-button @click="dialogInfo=false">取 消</el-button>
+                <el-button type="primary" @click="submitForm('ruleForm')">确 定</el-button>
+            </div>
+        </el-dialog>
+        <router-view></router-view>
+    </div>
+</template>
+
+<script>
+    import paging from '../../common/Paging.vue';
+    import rightsTree from './sysRightsTree.vue';
+    import userPage from './user.vue';
+
+    export default {
+        data(){
+            return {
+                /*****************/
+                dataTree: [],
+                defaultKey:[],
+                defaultProps: {
+                    children: 'children',
+                    label: 'label'
+                },
+                /**************/
+                sysRoleTableData: [],//角色列表数组
+                sels: [],//表格选中列
+                tabPage: {
+                    currentPage: 1,
+                    pageSize: 10,
+                    pageSizes: [10, 20, 30, 50]
+                },//分页信息
+                loading: true,
+                formInline: {//查询表单对象
+                    rolename: ''
+                },
+                dialogInfo: false,//模态框是否显示标识
+                ruleForm: {//新增表单数据
+
+                },
+                formTitle: '',//新增编辑模态框title
+                roleid:'',//角色id
+                userRoleid:'',//角色id查询用户
+                userData:[],//用户列表
+                rolesList:[],//获取角色下拉
+                btnShow:true,//功能按钮是否显示
+                tabSize:[24,24,24,24],//栅格用户列表
+                rightSize:8,//栅格用户角色列表
+                isUserList:false,//显示用户列表
+                isMenuList:false,//显示权限列表
+
+            }
+        },
+        created: function () {
+
+        },
+        mounted: function () {
+            this.openScreen();
+            this.getSysRoleList();
+            this.getSysMenu();
+            this.getRoleName();
+        },
+        components: {
+            paging,rightsTree,userPage
+        },
+        computed: {},
+        methods: {
+            openScreen() {//加载...
+                this.loading = true;
+                setTimeout(() => {
+                    this.loading = false;
+                }, 200);
+            },
+            handleRights(index,row){
+                this.tabSize = [24,24,16,16];
+                this.isUserList = false;
+                this.isMenuList = true;
+                this.roleid =row.id;
+
+            },
+            getRoleMenu(params){
+                var _self = this;
+                this.$http.get('/system/role/getsysrolemenu',{params:params})
+                    .then(function (res) {
+                        if(res.data&&res.data.flag){
+                            _self.defaultKey = res.data.data;
+                        }else{
+                            _self.$message({
+                                message:'查询错误',
+                                type:'warning'
+                            })
+                        }
+                    }).catch(function (error) {
+                    console.log(error)
+                });
+            },
+            /******/
+            getSysMenu(){
+                var _self = this;
+                this.$http.get('/system/menu/getsysmenualllist')
+                    .then(function (res) {
+                        _self.dataTree = res.data.data;
+                    }).catch(function (error) {
+                    console.log(error)
+                });
+            }
+            /****/,
+            getSysRoleList(params){
+                var _self = this;
+                if (!params) {
+                    var data = {
+                        page: this.tabPage.currentPage,
+                        pageSize: this.tabPage.pageSize,
+                        rolename: this.formInline.rolename
+                    };
+                    params = data;
+                }
+                this.$http.get('/system/role/getsysrolelist', {params: params})
+                    .then(function (res) {
+                        if (res.data && res.data.flag) {
+                            var d = res.data.data;
+                            _self.sysRoleTableData = d.rows;
+                            _self.tabPage.totalNum = d.count;
+                            _self.btnShow = res.data.btnShow;
+                        }else{
+                            _self.$message({
+                                message:res.data.msg,
+                                type: 'warning'
+                            });
+                        }
+                    }).catch(function (error) {
+                    console.log(error)
+                });
+            },
+            getRoleName(){
+                var _self = this;
+                this.$http.get('/system/role/getsysrolesname').then(function(res){
+                    if(res.data&&res.data.flag){
+                        _self.rolesList = res.data.data;
+                    }else {
+                        _self.$message({
+                            message:'查询错误',
+                            type:'warning'
+                        })
+                    }
+                }).catch(function (err) {
+                    if(err){
+                        _self.$message({
+                            message:'连接错误',
+                            type:'error'
+                        })
+                    }
+                })
+            },
+            getMenuByRole(data){
+                this.roleid = data
+                var params = {roleid:data};
+                this.getRoleMenu(params);
+            },
+            /**
+             * 查询 根据角色名称模糊查询
+             * @params {String} formName 进行验证
+             */
+            onSearch(formName){
+                var params = this.formInline;
+                params.page = 1;
+                params.pageSize = this.tabPage.pageSize;
+                this.tabPage.currentPage =1;//每次查询默认第一页
+                var _self = this;
+                _self.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        _self.getSysRoleList(params);
+                    } else {
+                        console.log('提交错误');
+                    }
+                });
+            },
+            /**
+             * 点击新增按钮
+             */
+            handleAdd(){
+                this.dialogInfo = true;
+                this.formTitle = "新增角色信息";
+                this.ruleForm = Object.assign({},{
+                    rolename:'',
+                    rolecode:'',
+                    description:''
+                });
+            },
+            /**
+             * 保存角色信息
+             * @params {String} formName 用于验证
+             */
+            submitForm(formName){
+                var _self = this;
+                var params = _self.ruleForm;
+                this.$refs[formName].validate(function(valid){
+                    if (valid) {
+                        _self.$http.post('/system/role/savesysroleinfo', params)
+                            .then(function (res) {
+                                if(res.data&&res.data.flag){
+                                    _self.dialogInfo = false;
+                                    _self.$message({
+                                        message: '提交成功',
+                                        type: 'success'
+                                    });
+                                    _self.getSysRoleList();
+                                    _self.getRoleName();
+                                }else{
+                                    _self.$message({
+                                        message:res.data.msg,
+                                        type: 'warning'
+                                    });
+                                }
+                            })
+                            .catch(function (error) {
+                                console.log(error);
+                            });
+                    } else {
+                        console.log('提交错误');
+                        return false;
+                    }
+                });
+            },
+            /**
+             * 表单重置
+             * @params {Object} formName 表单名称
+             */
+            resetForm(formName){
+                this.$refs[formName].resetFields();
+            },
+            /**
+             * 编辑按钮点击事件
+             * @params {Number} index  行号
+             * @params {Object} row 行对象
+             */
+            handleEdit(index, row) {
+                this.dialogInfo = true;
+                this.formTitle = "编辑角色信息";
+                this.ruleForm = Object.assign({}, row);
+            },
+            /**
+             * 删除按钮点击事件
+             * @params {Number} index   行号
+             * @params {Object} row     行对象
+             */
+            handleDelete(index, row) {
+                var _self = this;
+                _self.deleteSysRoleInfo(row);
+            },
+            /**
+             * 删除角色信息
+             * @params {Object} row|rows     行对象
+             */
+            deleteSysRoleInfo(data){
+                var _self = this;
+                this.$confirm('此操作将永久删除选择角色信息, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(function(){
+                    _self.$http.post('/system/role/delsysroleinfo', data).then(function (res) {
+                        if (res.data && res.data.flag) {
+                            _self.$message({
+                                message: '删除成功',
+                                type: 'success'
+                            });
+                            _self.getSysRoleList();
+                            _self.getRoleName();
+                        }else{
+                            _self.$message({
+                                message: res.data.msg,
+                                type: 'warning'
+                            });
+                        }
+                    }).catch(function (err) {
+                        console.log(err);
+                    })
+                }).catch(function(err){
+                    console.log(err);
+                });
+            },
+            /**
+             * 切换每页条数
+             * @params {Number} val 每页条数
+             */
+            handleSizeChange(val) {
+                this.tabPage.pageSize = val;
+                this.getSysRoleList();
+            },
+            /**
+             * 切换页码
+             * @params {Number} val 页码
+             */
+            handleCurrentChange(val) {
+                this.tabPage.currentPage = val;
+                this.getSysRoleList();
+            },
+            /**
+             * 多选框改变选中事件
+             * @params {Array} val 当前所有选中行对象数组
+             */
+            handleSelectionChange(val) {
+                this.multipleSelection = val;
+                this.sels = val;
+            },
+            /**
+             * 批量删除操作
+             */
+            batchRemove(){
+                var _self = this;
+                var arr = _self.sels;
+                if (arr.length > 0) {
+                    _self.deleteSysRoleInfo({params: arr});
+                } else {
+                    _self.$message({
+                        message: '请选择角色',
+                        type: 'warning'
+                    });
+                }
+
+            },
+            handleUsersTab(index,row){
+                this.tabSize = [24,24,12,12];
+                this.isUserList = true;
+                this.isMenuList = false;
+                this.userRoleid = row.id;
+            },
+        }
+    }
+</script>
+
+<style scoped>
+
+   
+</style>

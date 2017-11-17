@@ -1,0 +1,27 @@
+
+module.exports = {
+    MediaConfig: {
+        nodeid: '008000001001',
+        nodeaddr: 'tcp://192.168.12.72:9003',
+        // nodeid: '008000001001',
+        // nodeaddr: 'tcp://192.168.12.72:9003',
+        hostip: '192.168.1.253',
+        webPort: 3002
+    },
+    webConfig: {
+        port:3008,
+        count: 0,
+        defaultArea: 'index',//默认控制区域
+        defaultServerPath: 'http://172.16.187.83:3008',//默认服务器路径
+        filePath: 'public/upload'//文件默认路径
+
+    },
+    webTokenTimeOut: {  //web端token过期配置
+        dateType: 'day',   //年月日时分秒
+        number: 1      //几年几月几时几分几秒
+    },
+    appTokenTimeOut: { //移动端token过期配置
+        dateType: 'months',
+        number: 1
+    }
+};

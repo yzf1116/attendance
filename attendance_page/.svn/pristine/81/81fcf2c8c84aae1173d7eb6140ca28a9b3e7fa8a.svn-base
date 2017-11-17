@@ -1,0 +1,1477 @@
+<template>
+  <div>
+    <!--查询-->
+    <el-form :inline="true" :model="formInline" class="demo-form-inline" ref="formInline">
+      <el-form-item label="审批名称" prop="template_name">
+        <el-input v-model="formInline.template_name" placeholder="审批名称"></el-input>
+      </el-form-item>
+      <el-form-item>
+        <el-button size="mini" type="primary" icon="search" @click="onSearch('formInline')">查询</el-button>
+        <el-button size="mini" type="info" @click="resetForm('formInline')">
+          <icon name="refresh" class="custom-icon"></icon>
+          重置
+
+        </el-button>
+        <el-button size="mini" type="success" icon="plus" @click="handleAdd">新增</el-button>
+        <el-button size="mini" type="danger" icon="delete" @click="batchRemove">批量删除</el-button>
+
+
+      </el-form-item>
+    </el-form>
+
+    <!--表格-->
+    <el-table
+      :data="approveTableData"
+      border
+      :height="this.$store.state.gTableHeight"
+      v-loading="tableLoading"
+      @selection-change="handleSelectionChange"
+      style="width: 100%">
+      <el-table-column
+        type="selection"
+        width="45"
+      >
+      </el-table-column>
+      <el-table-column
+        prop="template_name"
+        label="审批名称"
+      >
+      </el-table-column>
+      <el-table-column
+        prop="create_user"
+        label="创建人">
+      </el-table-column>
+      <el-table-column
+        prop="create_date"
+        label="创建时间">
+      </el-table-column>
+      <el-table-column
+        prop="approve"
+        label="审批人">
+      </el-table-column>
+      <el-table-column
+        prop="sendPerson"
+        label="抄送人">
+      </el-table-column>
+      <el-table-column
+        label="是否启用"
+      >
+
+        <template scope="scope">
+          <el-switch
+            v-model="scope.row.is_use"
+            v-show="scope.row.approve !='' "
+            on-text="是"
+            off-text="否"
+            on-value="1"
+            off-value="0"
+            @change="handleisEnable(scope.$index, scope.row)"
+          >
+          </el-switch>
+        </template>
+
+      </el-table-column>
+
+
+      <el-table-column label="操作" width="210">
+        <template scope="scope">
+          <!--<el-button-->
+          <!--size="mini"-->
+          <!--type="primary"-->
+          <!--@click="handleEdit(scope.$index, scope.row)">编辑-->
+          <!--</el-button>-->
+          <el-button
+            size="mini"
+            type="primary"
+            @click="handleSet(scope.$index, scope.row)">设置审批人
+
+          </el-button>
+          <el-button
+            size="mini"
+            type="primary"
+            @click="handleSetSend(scope.$index, scope.row)">设置抄送人
+
+          </el-button>
+
+
+          <el-button
+            size="mini"
+            type="danger"
+            @click="handleDelete(scope.$index, scope.row)">删除
+
+          </el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <paging @emitsizechange="handleSizeChange"
+            @emitcurrentchange="handleCurrentChange"
+            :currentPage="tabPage.currentPage"
+            :pageSizes="tabPage.pageSizes"
+            :pageSize="tabPage.pageSize"
+            :total="tabPage.totalNum"
+    >
+
+    </paging>
+    <!--dialog-->
+
+    <!--审批人员-->
+    <el-dialog title="审批人员选择" :visible.sync="dialogVisible" class="groupclass" size="large"
+               :close-on-click-modal="false" style="width:100%">
+      <div style="display: flex">
+        <div style="display:flex; width:55%;">
+          <div style="display: flex;flex-wrap:wrap; width:80%">
+            <div style="display: flex;flex-wrap:wrap;height:120px" v-for="(item, index) in policeList">
+              <div class="approve">
+                <img class="avatar img_src">
+                <el-tag
+                  :key="item.name"
+                  :closable="true"
+                  type="primary"
+                  style="margin-top: 5px"
+                  @close="delApprove(index)"
+                >
+                  {{item.name}}
+
+                </el-tag>
+              </div>
+              <div style="margin-top: 25px">
+                <img class="arrow" src="../../../assets/img/cc-arrow-right2.png">
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <el-button type="success" icon="plus" @click="addApprove()">添加主管</el-button>
+          </div>
+
+        </div>
+        <div style="width:45%;">
+          <el-row :gutter="20" class="selectDepart">
+            <el-col :span="22">
+              <p class="departTitle">选择部门与人员</p>
+              <div class="surround" v-loading="loading">
+                <el-input
+                  placeholder="输入关键字进行过滤"
+                  v-model="filterText">
+                </el-input>
+                <el-tree
+                  :disabled="true"
+                  ref="treeChoose"
+                  style="height: 300px;overflow: auto;"
+                  show-checkbox
+                  class="filter-tree"
+                  :data="TreeData"
+                  node-key="id"
+                  :render-content="renderContent"
+                  :props="defaultProps"
+                  @check-change="treeChange"
+                  :filter-node-method="filterNode"
+                >
+                </el-tree>
+              </div>
+            </el-col>
+          </el-row>
+          <div style="text-align: right;margin-top: 10px;">
+          <span slot="footer" class="dialog-footer">
+    <el-button @click="closeDialog(0)">取 消</el-button>
+    <el-button type="primary" @click="closeDialog(1)">确 定</el-button>
+  </span>
+          </div>
+        </div>
+      </div>
+    </el-dialog>
+
+    <el-dialog title="抄送人员选择"
+               :visible.sync="dialogShow"
+               class="groupclass"
+               size="large"
+               :close-on-click-modal="false" style="width:100%">
+      <div style="display: flex">
+        <div style="display:flex; width:55%;">
+          <div style="display: flex;flex-wrap:wrap; width:80%">
+            <div style="display: flex;flex-wrap:wrap;height:120px" v-for="(item, index) in sendPersonData">
+              <div class="approve">
+                <img class="avatar img_src">
+                <el-tag
+                  :key="item.name"
+                  :closable="true"
+                  type="primary"
+                  style="margin-top: 5px"
+                  @close="delSendPerson(index)"
+                >
+                  {{item.name}}
+
+                </el-tag>
+              </div>
+              <div style="margin-top: 25px;margin-right: 15px">
+
+              </div>
+            </div>
+          </div>
+
+
+        </div>
+        <div style="width:45%;">
+          <Police :dialog-visible="undialogVisible" type="send_person" :data="adPropData" ref="send_person"
+                  title="抄送人员选择" @close="undialogClose"></Police>
+        </div>
+      </div>
+
+    </el-dialog>
+
+
+    <!--&lt;!&ndash;抄送人员&ndash;&gt;-->
+    <!--<el-dialog title="抄送人员选择" :visible.sync="undialogVisible" class="groupclass"-->
+    <!--:close-on-click-modal="false" >-->
+    <!--<Police :dialog-visible="undialogVisible" type="send_person" :data="adPropData" ref="send_person"-->
+    <!--title="抄送人员选择" @close="undialogClose"></Police>-->
+    <!--</el-dialog>-->
+
+
+  </div>
+</template>
+<script>
+  import detailForm from '../../common/detailForm.vue'
+  import paging     from '../../common/Paging.vue'
+  import ElButton   from "../../../../node_modules/element-ui/packages/button/src/button"
+  import ElForm     from "../../../../node_modules/element-ui/packages/form/src/form"
+  import Police     from '../../common/approveChoose.vue'
+  import ElInput    from "../../../../node_modules/element-ui/packages/input/src/input";
+  import ElFormItem from "../../../../node_modules/element-ui/packages/form/src/form-item";
+  import ElRow      from "element-ui/packages/row/src/row";
+  import ElDialog   from "../../../../node_modules/element-ui/packages/dialog/src/component";
+
+  export default {
+    data() {
+      return {
+        newdata: [],
+        loading: false,
+        rightCheckList: [],
+        filterText: '',
+        TreeData: [],
+        defaultProps: {
+          children: 'children',
+          label: 'name',
+        },
+        parmentList: [],
+        policeList: [],
+        rightTree: [],
+        status: true,
+//        listData:[
+//          {name: '一级主管'}
+//        ],
+        approveTableData: [{
+          template_name: '',
+          create_user: '',
+          create_date: '',
+          is_use: null,
+          approve: '',
+          send_person: ''
+
+        }], //审批列表列表数组
+        sels: [], //表格选中列
+        tabPage: {
+          currentPage: 1,
+          pageSize: 10,
+          pageSizes: [10, 20, 30, 50]
+        }, //分页信息
+        formInline: { //查询表单对象
+          template_name: '',
+        },
+        dialogEdit: false,//编辑模态
+        dialogInfo: false, //详情模态框是否显示标识
+        formTitle: '设置审批人和抄送人',//新增编辑模态框title
+        dialogVisible: false,
+        undialogVisible: false,
+        dialogShow: false,
+        tableLoading: false,
+
+        detailArr: [],//详情数组
+        propData: {
+          defalut: [],
+          policeList: [],
+        },
+        adPropData: {
+          defalut: [],
+          policeList: [],
+        },
+        attendanceClerk: {
+          defalut: [],
+          policeList: [],
+        },   //审批人员数据
+        send_person: {
+          defalut: [],
+          policeList: []
+        },
+        zw: [],//职位数组
+        grgz: [],//工人工种数组
+        image: {},//图片流预览图片
+        btnShow: false,//图片移除按钮是否显示
+        ServerimageUrl: 'api/',//后台地址
+        ruleForm: {
+          approve: '',
+          send_person: ''
+
+        },
+        policeListInfo: [],
+        approveList: [],
+        listData: [],
+        policeData: [],
+        sendPerson: [],//抄送人
+        sendPersonList: [],
+
+      }
+    },
+    created: function () {
+      this.getApprove();
+      this.getSendPerson();
+      this.idChangeName();
+      this._policeListData();
+      this.getSysTemplateList();
+    },
+    mounted: function () {
+      this.zw = this.getDicData('zw');
+      this.grgz = this.getDicData('grgz');
+
+    },
+    components: {
+      ElDialog,
+      ElRow,
+      ElFormItem,
+      ElInput,
+      ElForm,
+      ElButton,
+      detailForm, paging, Police
+    },
+    updated() {
+
+    },
+    watch: {
+      filterText(val) {
+        this.$refs.treeChoose.filter(val);
+      },
+      data(){
+        this.getPlOrgListToTree();
+      }
+    },
+    computed: {
+      sendPersonData: function () {
+        let sendPerson = this.$store.getters.getApprove;
+        let vm = this;
+        console.log('呵呵呵', sendPerson);
+        console.log('这是为什么呢',vm.sendPersonList);
+       let data =  sendPerson.concat(vm.sendPersonList);
+        console.log('sendPerson',sendPerson);
+        return data
+      }
+    },
+
+    methods: {
+      remove(node, data, store){
+      },
+      rightRenderContent(h, {node, data, store}) {
+        if (node.data.type == 'depart') {
+          return h(
+            'span', {}, [
+              h('span', {}, node.data.name),
+              h('span', {
+                style: {
+                  float: 'right'
+                }
+              }, [
+                h('el-button', {
+                  attrs: {
+                    size: 'mini',
+                    type: "danger"
+                  },
+                  on: {
+                    click: () => {
+                      this.$refs.treeChoose.setChecked(data, false, true)
+                    }
+                  }
+                }, '删除'),
+              ])
+            ]
+          )
+        } else {
+          return h(
+            'span', {}, [h('span', {
+              style: {
+                width: '20px',
+                background: 'rgba(21, 144, 234, 0.73)',
+                padding: '5px',
+                'border-radius': '15px',
+                color: '#fff',
+                margin: '0 5px 0 0'
+              },
+            }, node.data.name.substring(0, 1)),
+              h('span', {}, node.data.name),
+              h('span', {
+                style: {
+                  float: 'right'
+                }
+              }, [
+                h('el-button', {
+                  attrs: {
+                    size: 'mini',
+                    type: "danger"
+                  },
+                  on: {
+                    click: () => {
+                      this.$refs.treeChoose.setChecked(data, false, true)
+                    }
+                  }
+                }, '删除'),
+              ])
+            ]
+          )
+        }
+
+      },
+      /**
+       * 关闭dialog
+       * @value 关闭状态 0 取消 1 确定
+       */
+      closeDialog(value){
+        let vm = this;
+        if (value === 0) {
+          console.log('关闭');
+          vm.dialogVisible = false;
+        } else if (value === 1) {
+          console.log('确定');
+          console.log('确定', vm.policeList);
+
+          vm.rightCheckList = [];
+          vm.dialogVisible = false;
+          for (let i = 0; i < vm.policeList.length; i++) {
+            console.log(vm.policeList[i].approverid!== undefined);
+                if(vm.policeList[i].id !== undefined && vm.policeList[i].approverid === undefined){
+                  vm.policeList[i].approverid = vm.policeList[i].id;
+                  vm.policeList[i].appr_level = i + 1;
+                  vm.policeList[i].temp_id = vm.ruleForm.id;
+                  vm.policeList[i].templateid = vm.policeList[i].temp_id;
+                }else if(vm.policeList[i].approverid === undefined && vm.policeList[i].id === undefined){
+                  vm.policeList[i].approverid = i+1;
+                  vm.policeList[i].appr_level = i + 1;
+                  vm.policeList[i].temp_id = vm.ruleForm.id;
+                  vm.policeList[i].templateid = vm.policeList[i].temp_id;
+                }
+          }
+          let params = vm.policeList;
+          console.log('最终保存的',params);
+          vm.$http.post('/business/approve/saveapproves', params).then(function (res) {
+            if (res.data.success) {
+              vm.$message({
+                message: '保存成功',
+                type: 'success'
+              });
+              vm.getApprove();
+              vm.getSendPerson();
+              vm.idChangeName();
+              vm._policeListData();
+              vm.getSysTemplateList();
+            }
+          })
+
+        }
+//        vm.getPlOrgListToTree();
+      },
+      /**
+       * Tree树节点显示区分（组织机构、警员）
+       *@param h createlement 方法
+       *@param node   节点
+       */
+      renderContent(h, node){
+        if (node.data.type == 'depart') {
+          return h(
+            'span',
+            {
+              class: {
+                foo: true
+              },
+              style: {
+//              color: 'red',
+                fontSize: '14px'
+              },
+            },
+            [
+              h('i', {
+                class: {
+                  'el-icon-message': true
+                },
+                style: {
+                  color: '#20a0ff',
+                  margin: '0 5px 0 0',
+                }
+              }),
+              h('span', node.data.name)
+            ]
+          )
+        } else {
+          return h(
+            'span',
+            {
+              class: {
+                foo: true
+              },
+              style: {
+//              color: 'red',
+                fontSize: '14px'
+              },
+            },
+            [
+              h('span', {
+                style: {
+                  width: '20px',
+                  background: 'rgba(21, 144, 234, 0.73)',
+                  padding: '5px',
+                  'border-radius': '15px',
+                  color: '#fff',
+                  margin: '0 5px 0 0'
+                },
+              }, node.data.name.substring(0, 1)),
+              h('span', node.data.name)
+            ]
+          )
+        }
+
+      },
+      /**
+       *查询组织结构信息(树)
+       */
+      async getPlOrgListToTree(parms){
+        try {
+          const _self = this;
+          let parm = {};
+          if (parms) {
+            parm = parms
+          }
+          _self.loading = true;
+          const callBackData = await _self.$http.get('/business/plOrg/getallplorgandpolicelist', {params: parm});
+          if (callBackData.data.success) {   //查询成功
+            const result = callBackData.data.result;
+            _self.TreeData = _self.toTreeData(result);
+            _self.$nextTick(function () {
+              _self.$refs.treeChoose.setCheckedNodes(_self.policeList);
+            });
+
+            _self.loading = false;
+          } else {
+            _self.loading = false;
+            _self.$message({
+              message: callBackData.data.msg,
+              type: 'warning'
+            });
+          }
+        } catch (err) {
+        }
+
+
+      },
+
+      /**
+       * 格式转树状结构
+       * @param   {Array}      原数据
+       * @param   {String}    id的字符串
+       * @param   {String}    父id的字符串
+       * @param   {String}    children的字符串
+       * @return  {Array}     数组
+       */
+      transData(a, idStr, pidStr, chindrenStr){
+        var r = [], hash = {}, id = idStr, pid = pidStr, children = chindrenStr, i = 0, j = 0, len = a.length;
+        for (; i < len; i++) {
+          hash[a[i][id]] = a[i];
+        }
+        for (; j < len; j++) {
+          var aVal = a[j], hashVP = hash[aVal[pid]];
+          if (hashVP) {
+            !hashVP[children] && (hashVP[children] = []);
+            hashVP[children].push(aVal);
+          } else {
+            r.push(aVal);
+          }
+        }
+        return r;
+      },
+      /**
+       * 组合组织机构信息构建树结构信息
+       *@param {Object} data 组织机构信息
+       */
+      toTreeData(data){
+        var pos = {};
+        var tree = [];
+        var i = 0;
+
+        while (data.length != 0) {
+          if (data[i].parentid == '1') {
+            var children = [];
+            if (data[i].pl_people.length > 0) {
+              for (var item of data[i].pl_people) {
+                children.push({
+                  id: item.id,
+                  name: item.police_name,
+                  type: 'police',
+//                  parentname: data[i].org_name,
+                  parentid: data[i].id
+                })
+              }
+            }
+            tree.push({
+              id: data[i].id,
+              org_code: data[i].org_code,
+              name: data[i].org_name,
+              org_type: data[i].org_type,
+              parentid: data[i].parentid,
+              description: data[i].description,
+              children: children,
+              type: 'depart'
+            });
+            pos[data[i].id] = [tree.length - 1];
+            data.splice(i, 1);
+            i--;
+          } else {
+            let posArr = pos[data[i].parentid];
+            if (posArr != undefined) {
+              let obj = tree[posArr[0]];
+              for (let j = 1; j < posArr.length; j++) {
+                obj = obj.children[posArr[j]];
+              }
+              let children = [];
+              if (data[i].pl_people.length > 0) {
+                for (let item of data[i].pl_people) {
+                  children.push({
+                    id: item.id,
+                    name: item.police_name,
+                    parentid: data[i].id,
+//                    parentname: data[i].org_name,
+                    type: 'police'
+                  })
+                }
+              }
+
+              obj.children.push({
+                id: data[i].id,
+                org_code: data[i].org_code,
+                name: data[i].org_name,
+                org_type: data[i].org_type,
+                parentid: data[i].parentid,
+                type: 'depart',
+                description: data[i].description,
+                children: children
+              });
+              pos[data[i].id] = posArr.concat([obj.children.length - 1]);
+              data.splice(i, 1);
+              i--;
+            }
+          }
+          i++;
+          if (i > data.length - 1) {
+            i = 0;
+          }
+        }
+        return tree;
+      },
+
+      toRightTreeData(data){
+        let pos = {};
+        let tree = [];
+        let i = 0;
+
+        while (data.length !== 0) {
+          if (data[i].parentid === '1') {
+
+            tree.push({
+              id: data[i].id,
+              name: data[i].name,
+              parentid: data[i].parentid,
+              children: [],
+              type: data[i].type
+            });
+            pos[data[i].id] = [tree.length - 1];
+            data.splice(i, 1);
+            i--;
+          } else {
+            if (posArr !== undefined) {
+
+            }
+            let posArr = pos[data[i].parentid];
+            if (posArr !== undefined) {
+              let obj = tree[posArr[0]];
+              for (let j = 1; j < posArr.length; j++) {
+                obj = obj.children[posArr[j]];
+              }
+              obj.children.push({
+                id: data[i].id,
+                name: data[i].name,
+                parentid: data[i].parentid,
+                children: [],
+                type: data[i].type
+              });
+              pos[data[i].id] = posArr.concat([obj.children.length - 1]);
+              data.splice(i, 1);
+              i--;
+            }
+          }
+          i++;
+          if (i > data.length - 1) {
+            i = 0;
+          }
+        }
+        return tree;
+      },
+
+      /**
+       * 过滤tree数据
+       * @param value
+       * @param data
+       * @returns {boolean}
+       */
+      filterNode(value, data) {
+        if (!value) return true;
+        return data.name.indexOf(value) !== -1;
+      },
+
+      /**
+       *tree点击事件
+       * @param data
+       * @param isCheck
+       * @param childerCheck
+       */
+      treeChange(data, isCheck, childerCheck){
+        let vm = this;
+        let nodeData = vm.$refs.treeChoose.getCheckedNodes();
+        let newdata = JSON.parse(JSON.stringify(nodeData));
+        for (let item of newdata) {
+          item.children = [];
+        }
+        console.log(nodeData);
+        for (let item of nodeData) {    //过滤对象数组中重复的值
+          if (item.type === 'police') {
+            let isAdd = true;
+            for (let it of vm.policeList) {
+              console.log(it.id === item.id);
+              if (it.id === item.id) {
+                isAdd = false;
+              }
+            }
+            if (isAdd) {
+              vm.policeList.push(item)
+            }
+          }
+        }
+        console.log('生成数据', vm.policeList);
+        vm.rightTree = vm.transData(newdata, 'id', 'parentid', 'children');
+        vm.$store.dispatch('setApprove', vm.policeList);
+      },
+
+      /**
+       * 移除节点
+       * @param data
+       */
+      removeNode(data){
+        this.$refs.treeChoose.setChecked(data, false, true)
+      },
+
+//      setDat(data){
+//        this.$refs.treeChoose.setCheckedNodes(this.data);
+//      },
+      getListData(){
+
+      },
+      getDicData(str){//获取数据字典相关内容
+        let dicList = JSON.parse(this.$getStore("gDictionaryList"));
+        let filterarray = $.grep(dicList, function (value) {
+          return value.typegroupcode === str;//筛选出其中一个，仍为一个数组
+        });
+        if (filterarray.length > 0) {//防止前端报错
+          return filterarray[0].typeList;
+        }
+      },
+      chooseImg(){
+        $('input[type=file]').trigger('click');
+        return false
+      },
+
+      /**
+       * 怎么给移动端设置审批人和抄送人？
+       * 移动端的审批信息如何保存？
+       * 怎么和移动端交互？
+       *
+       * 1.首先移动端有审批列表，显式目前的审批模版，移动端要读取我的模版文件的时候，它需要传id，传title
+       * 2.我需要写一个接口给移动端来获取模版列表。而且是启用的模版列表（is_use=1）
+       *
+       * 工作内容: 审批列表审批人和抄送人的设置，接入treeChoose组件
+       *          移动端获取模版列表接口；注意：获取模版列表和模版json文件不同；
+       *
+       */
+      //获取模版列表数据
+      async getSysTemplateList(params) {
+        this.tableLoading = true;
+        let vm = this;
+        let data = {
+          page: this.tabPage.currentPage,
+          pageSize: this.tabPage.pageSize,
+          template_name: vm.formInline.template_name
+        };
+        if (params) {
+          data = params;
+        }
+        vm.$http.get('/system/template/getsystemplatelist', {
+          params: data
+        }).then(function (res) {
+          console.log('模板列表111111', res);
+          if (res.data && res.data.success) {
+            let m = res.data.result.rows;
+            let jy = vm.policeData;
+            let s = vm.approveList;
+            let c = vm.sendPerson;
+            console.log('模板列表', res);
+            let ms = [];
+            let obj = {};
+            //根据审批人id查找警员姓名，然后把警员姓名和模板id保存到ms中。
+            for (let i = 0; i < jy.length; i++) {
+              for (let j = 0; j < s.length; j++) {
+                if (s[j].approverid === jy[i].id) {
+                  obj.temId = s[j].templateid;
+                  obj.appName = jy[i].police_name;
+                  ms.push(obj);
+                  obj = {};
+                  //这里作判断，如果审批人id是1，2，3，4；则是默认审批人。
+                } else if (s[j].approverid === '1') {
+                  obj.temId = s[j].templateid;
+                  obj.appName = '1级主管';
+                  ms.push(obj);
+                  obj = {};
+                } else if (s[j].approverid === '2') {
+                  obj.temId = s[j].templateid;
+                  obj.appName = '2级主管';
+                  ms.push(obj);
+                  obj = {};
+                } else if (s[j].approverid === '3') {
+                  obj.temId = s[j].templateid;
+                  obj.appName = '3级主管';
+                  ms.push(obj);
+                  obj = {};
+                } else if (s[j].approverid === '4') {
+                  obj.temId = s[j].templateid;
+                  obj.appName = '4级主管';
+                  ms.push(obj);
+                  obj = {};
+                }
+              }
+            }
+            let mc = [];
+            let ekko = {};
+            //根据抄送人id判断警员姓名，把姓名和模板id保存到mc中
+            for (let i = 0; i < jy.length; i++) {
+              for (let j = 0; j < c.length; j++) {
+                if (jy[i].id === c[j].personid) {
+                  ekko.perId = c[j].templateid;
+                  ekko.appName = jy[i].police_name;
+                  mc.push(ekko);
+                  ekko = {};
+                }
+              }
+            }
+            console.log('mc', mc);
+            console.log('ms', ms);//获取到警员姓名和模板id
+            //根据模板id判断出审批人和抄送人
+            for (let i = 0; i < m.length; i++) {
+              for (let j = 0; j < ms.length; j++) {
+                if (m[i].id === ms[j].temId) {
+                  m[i].approve = ms[j].appName;
+                }
+              }
+            }
+            for (let i = 0; i < m.length; i++) {
+              for (let j = 0; j < mc.length; j++) {
+                if (m[i].id === mc[j].perId) {
+                  m[i].sendPerson = mc[j].appName;
+                }
+              }
+            }
+            console.log('模板列表', m);
+            vm.approveTableData = m;
+
+            vm.tabPage.totalNum = m.count;
+          }
+          vm.tableLoading = false;
+        }).catch(function (error) {
+          console.log(error)
+        });
+      },
+      idChangeName(){
+        let vm = this;
+        let data = {   //查询参数
+          page: this.tabPage.currentPage,
+          pageSize: this.tabPage.pageSize,
+          police_name: this.formInline.police_name
+        };
+        vm.$http.get('/business/policemanage/policelistdata', {params: data}).then(function (res) {
+          if (res.data.result && res.data.success) {
+            vm.policeListInfo = res.data.result.rows;
+          }
+        }).catch(function (err) {
+          console.log(err);
+        })
+      },
+      getApprove(){   //获取审批人方法
+        let vm = this;
+        vm.$http.get('/business/approve/getapprove').then(function (res) {
+          console.log('审批人', res);
+          if (res.data.result && res.data.success) {
+            vm.approveList = res.data.result
+          }
+        }).catch(function (err) {
+          console.log(err);
+          vm.$message({
+            message: '查询失败',
+            type: 'warning'
+          })
+        })
+      },
+      getSendPerson(){   //获取抄送人方法
+        let vm = this;
+        vm.$http.get('/business/approve/getsendperson').then(function (res) {
+          console.log('抄送人', res);
+          if (res.data.result && res.data.success) {
+            vm.sendPerson = res.data.result
+          }
+        }).catch(function (err) {
+          console.log(err);
+          vm.$message({
+            message: '查询失败',
+            type: 'warning'
+          })
+        })
+      },
+      /**
+       * 工作内容: 审批模版的新增查询，formbuild页面的微调；
+       *          审批模版的删除，删除物理路径下的图片，包括多条模版信息的删除；
+       *          审批模版审批人和抄送人的设置；
+       *
+       * 需求分析: 审批申请，根据传回来的审批类型判断是什么审批申请，然后读取审批人、抄送人和审批表里的内容给
+       *          移动端，审批表里有个字段状态，
+       *          审批信息还要发送给审批人和抄送人，
+       */
+      /**
+       * 查询 根据用户名模糊查询
+       * @params {String} formName 进行验证
+       */
+      onSearch(formName) {
+        let params = this.formInline;
+        console.log(params);
+        params.page = 1;
+        params.pageSize = this.tabPage.pageSize;
+        this.tabPage.currentPage = 1;//每次查询默认第一页
+        let _self = this;
+        _self.$refs[formName].validate((valid) => {
+          if (valid) {
+            _self.getSysTemplateList(params);
+          } else {
+            return console.log('提交错误');
+          }
+        });
+      },
+
+      /**
+       * 点击新增按钮
+       */
+      handleAdd() {
+        let userData = JSON.parse(this.$getStore('userData'));
+        let TOKEN = this.$getStore('TOKEN');
+        let params = {
+          token: TOKEN,
+          userInfo: userData
+        };
+
+        console.log(params.token);
+        window.open('../../../../static/html/formBuilder.html?par=' + JSON.stringify(params));
+      },
+
+      addApprove(){  //添加主管按钮
+        let vm = this;
+        console.log(vm.policeList);
+        let len = vm.policeList.length + 1;
+        console.log(len);
+
+        let app = {
+          name: `${len}级主管`
+        };
+        vm.policeList.push(app);
+      },
+
+      delApprove(index){ //删除选中的审批人
+        let vm = this;
+        vm.policeList.splice(index, 1);  //删除当前选中项
+      },
+
+
+      delSendPerson(index){ //删除抄送人
+        let vm = this;
+        vm.sendPersonList.splice(index, 1)
+      },
+      /**
+       * 2017年07月18日
+       * 工作内容： 审批功能的需求更改，数据库的重新设计
+       *           移动端接口获取审批模板
+       *           web端设置默认审批人，选择审批人；
+       *
+       * 目前问题： 重新选择审批人没有更改数据库
+       */
+
+      /**
+       * 点击设置按钮
+       *
+       */
+      handleSet(index, row){ //设置审批人按钮
+        let vm = this;
+        vm.dialogVisible = true;
+        vm.ruleForm = row;
+//        console.log('所有审批人',vm.approveList);
+//        console.log('警员',vm.policeData.length);
+        //一条审批模板有多个审批人，要根据模板ID找到审批人，然后在根据审批人id得到审批人姓名
+        vm.getPlOrgListToTree();
+        let approves = [];
+        console.log('打开设置', vm.approveList);
+        for (let m = 0; m < vm.approveList.length; m++) {
+          if (vm.approveList[m].templateid === vm.ruleForm.id) {
+            approves.push(vm.approveList[m]);
+          }
+        }
+        for (let i = 0; i < approves.length; i++) {
+          for (let j = 0; j < vm.policeData.length; j++) {
+            if (approves[i].approverid === '1') {
+              approves[i].name = '1级主管'
+            }
+            if (approves[i].approverid === '2') {
+              approves[i].name = '2级主管'
+            }
+            if (approves[i].approverid === '3') {
+              approves[i].name = '3级主管'
+            }
+            if (approves[i].approverid === '4') {
+              approves[i].name = '4级主管'
+            }
+            if (approves[i].approverid === vm.policeData[j].id) {
+              approves[i].name = vm.policeData[j].police_name
+            }
+          }
+        }
+
+        vm.policeList = approves;
+        console.log('设置后的', vm.policeList);
+      },
+
+      handleSetSend(index, row){  //设置抄送人按钮
+        let vm = this;
+        vm.ruleForm = row;
+        vm.dialogShow = true;
+        let sendPersons = [];
+        for (let m = 0; m < vm.sendPerson.length; m++) {
+          if (vm.sendPerson[m].templateid === vm.ruleForm.id) {
+            sendPersons.push(vm.sendPerson[m]);
+          }
+        }
+        for (let i = 0; i < sendPersons.length; i++) {
+          for (let j = 0; j < vm.policeData.length; j++) {
+            if (sendPersons[i].personid === vm.policeData[j].id) {
+              sendPersons[i].name = vm.policeData[j].police_name
+            }
+          }
+        }
+        vm.sendPersonList = sendPersons;
+      },
+      //获取所有警员列表做id姓名转换
+      _policeListData(){
+        let _self = this;
+        this.$http.get('/business/approve/getallpolice').then(function (res) {
+
+          if (res.data.result && res.data.success) {
+            _self.policeData = res.data.result
+          }
+        }).catch(function (err) {
+          console.log(err);
+        })
+      },
+      submitForm(formName){
+        let _self = this;//
+        let params = _self.ruleForm;
+        let d = this.attendanceClerk;
+        console.log(this.attendanceClerk);//这里是选择后的数组
+        console.log(d.policeList[0].name);
+        if (d.policeList[0] !== undefined) {
+          if (d.policeList[0].name === '一级主管') {
+            params.approve_1 = 1
+          } else {
+            params.approve_1 = d.policeList[0].name;
+          }
+        } else {
+          params.approve_1 = 1
+        }
+        if (d.policeList[1] !== undefined) {
+          if (d.policeList[1].name === '二级主管') {
+            console.log(2);
+            params.approve_2 = 2
+          } else {
+            params.approve_2 = d.policeList[1].name;
+          }
+        } else {
+          params.approve_2 = 2
+        }
+
+        if (d.policeList[2] !== undefined) {
+          if (d.policeList[2].name === '三级主管') {
+            params.approve_3 = 3
+          } else {
+            params.approve_3 = d.policeList[2].name;
+          }
+        } else {
+          params.approve_3 = 3
+        }
+
+        if (d.policeList[3] !== undefined) {
+          if (d.policeList[3].name === '四级主管') {
+            params.approve_4 = 4
+          } else {
+            params.approve_4 = d.policeList[3].name;
+          }
+        } else {
+          params.approve_4 = 4
+        }
+
+        this.$refs[formName].validate(function (valid) {
+          if (valid) {
+            _self.$http.post('/business/approve/setapprovepolice', params).then(function (res) {
+              console.log(res);
+              if (res.data && res.data.success) {
+                _self.getSysTemplateList();
+                _self.dialogEdit = false;
+                _self.$message({
+                  message: '设置成功',
+                  type: 'success'
+                });
+
+              } else {
+                _self.$message({
+                  message: res.data.msg,
+                  type: 'warning'
+                });
+              }
+
+            }).catch(function (err) {
+              console.log(err)
+            })
+          } else {
+            console.log('提交错误');
+            return false;
+          }
+        });
+      },
+      /**
+       * 表单重置
+       * @params {Object} formName 表单名称
+       */
+      resetForm(formName) {
+        this.$refs[formName].resetFields();
+        if (formName === 'formInline') {
+          this.getSysTemplateList()
+        }
+        if (formName === 'ruleForm') {
+          this.getSysTemplateList()
+        }
+      },
+      /**
+       * 编辑按钮点击事件
+       * @params {Number} index  行号
+       * @params {Object} row 行对象
+       */
+      handleEdit(index, row) {
+        console.log(row);
+        let userData = JSON.parse(this.$getStore('userData'));
+
+        let params = {
+          template_name: row.template_name,
+          create_date: row.create_date,
+          create_user: row.create_user,
+          is_use: row.is_use
+        };
+
+        console.log(typeof params);
+        window.open('../../../../static/html/formBuilder.html?par=' + JSON.stringify(row));
+      },
+      /**
+       * 批量删除操作
+       */
+      batchRemove(){
+        let _self = this;
+        let arr = _self.sels;
+        if (arr.length > 0) {
+          _self.deleteTemplateInfo({params: arr});
+        } else {
+          _self.$message({
+            message: '请勾选模版',
+            type: 'warning'
+          });
+        }
+      },
+      /**
+       * 删除按钮点击事件
+       * @params {Number} index   行号
+       * @params {Object} row     行对象
+       */
+      handleDelete(index, row) {
+        console.log(row);
+        let _self = this;
+        _self.deleteTemplateInfo(row);
+        return index
+      },
+      /**
+       * 删除部门信息
+       * @params {Object} row|rows     行对象
+       */
+      //是否启用按钮
+      handleisEnable(index, row){
+        let _self = this;
+        console.log(row.approve);
+        console.log(row);
+        console.log(row.send_person);
+        let status = row.is_use === '0' ? '1' : row.is_use === '1' ? '0' : '1'; //注意===严格等于
+//        if(row.approve == ''|| row.send_person==''){
+//            _self.$message({
+//              message: '请先设置审批人和抄送人',
+//              type: 'warning'
+//            })
+//          return
+//        }
+        let params = {
+          id: row.id,
+          is_use: status
+        };
+        console.log(params);
+        this.$http.post('/system/template/edittemplate', params).then(function (res) {
+          console.log(res.data);
+          if (res.data && res.data.success) {
+            _self.$message({
+              message: '状态更新成功',
+              type: 'success'
+            });
+            //_self.getSysUserList();
+          } else {
+            _self.$message({
+              message: '状态更改失败',
+              type: 'error'
+            });
+          }
+        }).catch(function (err) {
+          console.log(err);
+          _self.$message({
+            message: '状态更改失败',
+            type: 'error'
+          });
+        })
+      },
+      //删除模版信息
+      deleteTemplateInfo(data) {
+        let _self = this;
+        this.$confirm('此操作将永久删除该模版信息, 是否继续?', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          _self.$http.post('/system/template/deletesystemplate', data).then(function (res) {
+            console.log(res);
+            if (res.data && res.data.success) {
+
+              _self.getSysTemplateList();
+            }
+          }).catch(function (err) {
+            console.log(err);
+          })
+        }).catch(() => {
+
+        });
+      },
+
+      /**
+       * 组织及人员选择dialog关闭
+       * @msg [Object] 子组件传递数据
+       */
+      //选择审批人员和添加主管冲突；选择抄送人员功能
+
+      undialogClose(ms){
+        let vm = this;
+        let params = vm.ruleForm;
+        console.log('当前抄送人',vm.sendPersonData);
+
+        if (ms.dialog === 0) {
+          vm.dialogShow = ms.dialogVisible;
+          return
+        } else if (ms.dialog === 1) {
+          vm.dialogShow = ms.dialogVisible;
+          console.log(ms.CheckedLists);
+          console.log('选中列数据', params);
+          let a = [];
+          let b = {
+            id: '',
+            templateid: '',
+            personid: ''
+          };
+          for (let i = 0; i < vm.sendPersonData.length; i++) { //保存前数据格式的改变
+            if(vm.sendPersonData[i].templateid === undefined){
+              b.id = vm.sendPersonData[i].id;
+              b.templateid = params.id;
+              b.personid = vm.sendPersonData[i].id;
+              a.push(b);
+              b = {};
+            }else if(vm.sendPersonData[i].templateid !== undefined){
+              b.id = vm.sendPersonData[i].id;
+              b.templateid = vm.sendPersonData[i].templateid;
+              b.personid = vm.sendPersonData[i].personid;
+              a.push(b);
+              b = {};
+            }
+
+          }
+          console.log('保存数据',a);
+          vm.$http.post('/business/approve/savesendperson', a).then(function (res) {
+            if (res.data.success) {
+              vm.$message({
+                message: '保存成功',
+                type: 'success'
+              });
+              vm.getApprove();
+              vm.getSendPerson();
+              vm.idChangeName();
+              vm._policeListData();
+              vm.getSysTemplateList();
+
+            }
+          }).catch(function(err){
+            console.log(err);
+            vm.$message({
+              message:'保存失败',
+              type:'warning'
+            })
+          });
+        }
+
+        vm.send_person = ms.CheckedLists
+      },
+      /**
+       * 切换每页条数
+       * @params {Number} val 每页条数
+       */
+      handleSizeChange(val) {
+        this.tabPage.pageSize = val;
+        this.getSysTemplateList();
+      },
+      /**
+       * 切换页码
+       * @params {Number} val 页码
+       */
+      handleCurrentChange(val) {
+        this.tabPage.currentPage = val;
+        this.getSysTemplateList();
+      },
+      /**
+       * 多选框改变选中事件
+       * @params {Array} val 当前所有选中行对象数组
+       */
+      handleSelectionChange(val) {
+        this.multipleSelection = val;
+        this.sels = val;
+      },
+
+      closeDetail(msg){
+        this.dialogInfo = msg;
+      },
+
+    }
+  }
+</script>
+<style>
+  .tagclass {
+    min-height: 36px;
+    border-radius: 4px;
+    border: 1px solid #bfcbd9;
+    padding: 0 5px;
+    max-height: 100px;
+    overflow: auto;
+  }
+
+  .avatar {
+    width: 60px;
+    height: 60px;
+    display: block;
+    border-radius: 50%;
+    border: 0.5px solid #5e7382;
+  }
+
+  .img_src {
+    background-image: url('../../../assets/img/default.jpg');
+    background-size: 60px 60px;
+    background-repeat: no-repeat;
+  }
+
+  .removeIcon {
+    position: absolute;
+    z-index: 99;
+    right: 2px;
+    top: 2px;
+    background-color: ghostwhite;
+  }
+
+  .approve {
+    margin-left: 10px;
+    width: 60px;
+    height: 100px;
+  }
+
+  .removeIcon img {
+
+  }
+
+  .arrow {
+    width: 40px;
+    height: 20px;
+  }
+
+  .departTitle {
+    padding: 10px;
+  }
+
+  .surround {
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #bfcbd9;
+
+  }
+
+  .filter-tree {
+    margin-top: 10px;
+  }
+
+  .rightUl {
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #bfcbd9;
+    height: 350px;
+    overflow: auto;
+  }
+
+  .surround > ul > li {
+    list-style: none;
+    margin: 10px;
+  }
+
+  .selectDepart .el-tree {
+    border: 1px solid #fff;
+  }
+
+  .checklist {
+    padding: 5px;
+    list-style: none;
+  }
+</style>

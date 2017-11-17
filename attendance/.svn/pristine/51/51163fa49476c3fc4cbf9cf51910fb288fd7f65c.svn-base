@@ -1,0 +1,697 @@
+/**
+ * Created by DELL on 2017/6/29.
+ */
+
+var AjaxJson = require('../../utils/AjaxJson')
+var async = require('async')
+var uuid = require('node-uuid');
+var attendGroupModel = db['atd_group'];
+var personModel = db['pl_person'];
+var scheduleGroupModel = db['atd_schedule_group'];
+var atdAddressModel = db['atd_address'];
+var addressGroupModel = db['atd_address_group'];
+var atdScheduleModel = db['atd_schedule'];
+attendGroupModel.hasMany(scheduleGroupModel, {foreignKey: 'groupid'});
+attendGroupModel.hasMany(personModel, {foreignKey: 'atd_groupid'})
+attendGroupModel.hasMany(addressGroupModel, {foreignKey: 'groupid'})
+addressGroupModel.belongsTo(atdAddressModel, {foreignKey: 'addressid'})
+scheduleGroupModel.belongsTo(atdScheduleModel, {foreignKey: 'scheduleid'})
+
+// personModel.belongsTo (attendGroupModel,{foreignKey:'atd_groupid'});
+//保存考勤组信息
+exports.saveGroupInfo = function (data, callback) {
+    var result = {};
+    if (data.id) {
+        attendGroupModel.findOne({
+            where: {atd_name: data.atd_name, id: {$notIn: [data.id]}},
+            attributes: ['id']
+        }).then(function (res) {
+            if (res && res.id) {
+                result = new AjaxJson(false, "考勤组名称已存在，请确认后重新输入", null, null);
+
+            } else {
+                attendGroupModel.update(data, {where: {id: data.id}}).then(function (res) {
+                    async.auto({
+                        person: function (callback, results) {
+                            var adddepartList = [];
+                            var addpoliceList = [];
+                            for (var item of data.addPersonList) {
+                                if (item.type === 'depart') {
+                                    adddepartList.push(item.id)
+                                } else if (item.type === 'police') {
+                                    addpoliceList.push(item.id)
+                                }
+                            }
+
+                            async.series({
+                                delePolice: function (callback) {
+                                    if (data.delPersonList.length > 0) {
+                                        var delList = [];
+                                        for (var item of data.delPersonList) {
+                                            delList.push(item.id)
+                                        }
+                                        personModel.update({
+                                            atd_groupid: null,
+                                            responsible: 0
+                                        }, {where: {id: {$in: delList}}}).then(function (res) {
+                                            callback(null, 'delePolice')
+
+                                        }).catch(function (err) {
+                                            if (err) {
+                                                console.log(err)
+                                                result = new AjaxJson(false, "修改部门错误", null, null);
+                                                callback(result);
+                                            }
+                                        })
+
+                                    } else {
+                                        callback(null, 'delePolice')
+                                    }
+                                },
+                                depart: function (callback) {
+                                    var where = {
+                                        pl_orgid: {$in: adddepartList}
+                                    }
+                                    //部门处理
+                                    if (adddepartList.length > 0) {
+                                        personModel.findAll({where: where}).then(function (res) {
+                                            var idList = res.map(({id}) => id);
+                                            personModel.update({atd_groupid: data.id}, {where: {id: {$in: idList}}}).then(function (res) {
+                                                callback(null, 'depart')
+                                            }).catch(function (err) {
+                                                if (err) {
+                                                    result = new AjaxJson(false, "修改部门错误", null, null);
+                                                    callback(result);
+                                                }
+                                            })
+                                            // callback({flag: true, data: res})
+                                        }).catch(function (err) {
+                                            console.log(err)
+                                            result = new AjaxJson(false, "修改部门错误", null, null);
+                                            callback(result);
+                                        })
+                                    } else {
+                                        callback(null, 'depart')
+                                    }
+                                },
+                                police: function (callback) {                //警员处理
+                                    if (addpoliceList.length > 0) {
+                                        personModel.update({
+                                            atd_groupid: data.id,
+                                            responsible: 0
+                                        }, {where: {id: {$in: addpoliceList}}}).then(function (res) {
+                                            callback(null, 'police')
+
+                                        }).catch(function (err) {
+                                            if (err) {
+                                                console.log(err)
+                                                callback(result);
+                                            }
+                                        })
+                                    } else {
+                                        callback(null, 'police')
+                                    }
+                                },
+
+
+                            }, function (err, results) {
+                                if (err) {
+                                    console.log(err);
+                                    callback(err);
+                                } else {
+                                    callback(null, 'results');
+                                }
+
+                            })
+
+                        },
+                        managePerson: function (callback, results) {
+                            async.series({
+                                delManagePerson: function (callback) {
+                                    if (data.delManagerPersonList.length > 0) {
+                                        var idList = data.delManagerPersonList.map(({id}) => id);
+                                        personModel.update({
+                                            atd_groupid: null,
+                                            responsible: 0
+                                        }, {where: {id: {$in: idList}}}).then(function (res) {
+                                            callback(null, 'delManagePerson')
+                                        }).catch(function (err) {
+                                            if (err) {
+                                                result = new AjaxJson(false, "修改部门错误", null, null);
+                                                callback(result);
+                                            }
+                                        })
+                                    } else {
+                                        callback(null, 'delManagePerson');
+                                    }
+                                },
+                                addManagePerson: function (callback) {
+                                    if (data.addManagerPersonList.length > 0) {
+                                        var idList = data.addManagerPersonList.map(({id}) => id);
+                                        personModel.update({
+                                            atd_groupid: data.id,
+                                            responsible: 1
+                                        }, {where: {id: {$in: idList}}}).then(function (res) {
+                                            callback(null, 'addManagePerson')
+                                        }).catch(function (err) {
+                                            if (err) {
+                                                result = new AjaxJson(false, "修改部门错误", null, null);
+                                                callback(err);
+                                            }
+                                        })
+                                    } else {
+                                        callback(null, 'addManagePerson');
+                                    }
+                                }
+                            }, function (err, results) {
+                                if (err) {
+                                    console.log(err);
+                                    callback(err);
+                                }
+                                if (results) {
+                                    callback(null, 'managePerson');
+                                }
+                            })
+
+                            // callback(null, 'tow');
+                        },
+                        schedule: function (callback, results) {
+                            //处理逻辑
+                            async.series({
+                                delschedule: function (callback) {
+                                    if (data.delscheduleList.length > 0) {
+                                        var idList = data.delscheduleList.map(({id}) => id);
+                                        scheduleGroupModel.destroy({
+                                            where: {
+                                                groupid: data.id,
+                                                scheduleid: {
+                                                    $in: idList
+                                                }
+                                            }
+                                        }).then(function (res) {
+                                            callback(null, 'delschedule');
+                                        }).catch(function (err) {
+                                            callback(err);
+                                        })
+                                    } else {
+                                        callback(null, 'delschedule');
+                                    }
+                                },
+                                addschedule: function (callback) {
+                                    if (data.type !== 2) {       //不等于自由工时
+                                        var newscheduleList = [];
+                                        if (data.addscheduleList.length > 0) {
+                                            for (var item of data.addscheduleList) {
+                                                newscheduleList.push({
+                                                    id: uuid.v1(),
+                                                    scheduleid: item,
+                                                    groupid: data.id
+                                                })
+                                            }
+                                            scheduleGroupModel.bulkCreate(newscheduleList).then(function (res) {
+                                                callback(null, 'addschedule')
+                                            }).catch(function (err) {
+                                                if (err) {
+                                                    console.log(err)
+                                                    result = new AjaxJson(false, "班次考勤组管理错误", null, null);
+                                                    callback(result);
+                                                }
+                                            })
+                                        } else {
+                                            callback(null, 'addschedule')
+                                        }
+
+                                    } else {
+                                        callback(null, 'addschedule')
+                                    }
+
+                                }
+                            }, function (err, results) {
+                                if (err) {
+                                    console.log(err);
+                                    callback(err);
+                                }
+                                if (results) {
+                                    callback(null, 'schedule');
+                                }
+                            })
+                            // callback(null, 'schedule');
+                        },
+                        // address: function (callback, results) {
+                        //     //处理逻辑
+                        //     async.series({
+                        //         deladdress: function (callback) {
+                        //             if (data.delAddressList.length > 0) {
+                        //                 var idList = data.delAddressList.map(({id}) => id);
+                        //                 atdAddressModel.destroy({
+                        //                     where: {
+                        //                         id: {
+                        //                             $in: idList
+                        //                         }
+                        //                     }
+                        //                 }).then(function (res) {
+                        //                     // callback(null,'deladdress');
+                        //                     addressGroupModel.destroy({
+                        //                         where: {
+                        //                             groupid: data.id,
+                        //                             addressid: {
+                        //                                 $in: idList
+                        //                             }
+                        //                         }
+                        //                     }).then(function (res) {
+                        //                         callback(null, 'deladdress');
+                        //                     }).catch(function (err) {
+                        //                         callback(err);
+                        //                     })
+                        //                 }).catch(function (err) {
+                        //                     callback(err);
+                        //                 })
+                        //             } else {
+                        //                 callback(null, 'deladdress');
+                        //             }
+                        //         },
+                        //         addaddress: function (callback) {
+                        //             if (data.addscheduleList.length > 0) {
+                        //                 for (var item of data.addscheduleList) {
+                        //                     item.id = uuid.v1();
+                        //                 }
+                        //                 atdAddressModel.bulkCreate(data.addscheduleList).then(function (res) {
+                        //                     try {
+                        //                         var addressidList = [];
+                        //                         for (var item of data.addscheduleList) {
+                        //                             addressidList.push({
+                        //                                 id: uuid.v1(),
+                        //                                 groupid: data.id,
+                        //                                 addressid: item.id
+                        //                             })
+                        //                         }
+                        //                         addressGroupModel.bulkCreate(addressidList).then(function (res) {
+                        //                             callback(null, 'address')
+                        //                         }).catch(function (err) {
+                        //                             if (err) {
+                        //                                 console.log(err)
+                        //                                 result = new AjaxJson(false, "地址考勤组关联失败", null, null);
+                        //                                 callback(result);
+                        //                             }
+                        //                         })
+                        //                     } catch (e) {
+                        //                         result = new AjaxJson(false, "地址考勤组关联失败", null, null);
+                        //                         callback(result);
+                        //                     }
+                        //
+                        //
+                        //                 }).catch(function (err) {
+                        //                     if (err) {
+                        //                         console.log(err)
+                        //                         result = new AjaxJson(false, "地址添加错误", null, null);
+                        //                         callback(result);
+                        //                     }
+                        //                 })
+                        //             } else {
+                        //                 callback(null, 'addaddress');
+                        //             }
+                        //         }
+                        //
+                        //     }, function (err, results) {
+                        //         if (err) {
+                        //             console.log(err);
+                        //             callback(err);
+                        //         }
+                        //         if (results) {
+                        //             callback(null, 'address');
+                        //         }
+                        //     })
+                        //     callback(null, 'address');
+                        // }
+                    }, function (error, result) {
+                        console.log('one:', result.person);
+                        console.log('two:', result.managePerson);
+                        console.log('three:', result.schedule);
+                        console.log('four:', result.address);
+                        if (error) {
+                            result = new AjaxJson(false, "修改错误", null, null);
+                            return callback(result);
+                        } else {
+                            // result = new AjaxJson(true, "修改成功", null, null);
+                            result={success:true,msg:'修改成功'}
+                            return callback(result);
+                        }
+                    });
+                    // callback({flag: true})
+                }).catch(function (err) {
+                    if (err) {
+                        result = new AjaxJson(false, "修改错误", null, null);
+                        return callback(result);
+                    }
+                })
+            }
+        }).catch(function (err) {
+            if (err) {
+                result = new AjaxJson(false, "查询错误", null, null);
+                return callback(result);
+            }
+        })
+
+    } else {
+        data.id = uuid.v1();
+        attendGroupModel.count({where: {atd_name: data.atd_name}}).then(function (res) {
+            if (res && res > 0) {
+                result = new AjaxJson(false, "考勤组已经存在，请确认后重新输入", null, null);
+                return callback(result);
+            } else {
+                attendGroupModel.upsert(data).then(function (res) {
+                    async.parallel({
+                        //考勤人员
+                        attendDancePolice: function () {               //考勤人员管理
+                            var attendDancePolice = data.attendanceClerk;
+                            var departList = [];
+                            var policeList = [];
+                            for (var item of attendDancePolice) {
+                                if (item.type === 'depart') {
+                                    departList.push(item.id)
+                                } else if (item.type === 'police') {
+                                    policeList.push(item.id)
+                                }
+                            }
+                            var where = {
+                                pl_orgid: {$in: departList}
+                            }
+                            async.series({
+                                depart: function (callback) {            //部门处理
+                                    if (departList.length > 0) {
+                                        personModel.findAll({where: where}).then(function (res) {
+                                            var idList = res.map(({id}) => id);
+                                            personModel.update({atd_groupid: data.id}, {where: {id: {$in: idList}}}).then(function (res) {
+                                                callback(null, 'depart')
+                                            }).catch(function (err) {
+                                                if (err) {
+                                                    result = new AjaxJson(false, "修改部门错误", null, null);
+                                                    callback(result);
+                                                }
+                                            })
+                                            // callback({flag: true, data: res})
+                                        }).catch(function (err) {
+                                            console.log(err)
+                                            result = new AjaxJson(false, "修改部门错误", null, null);
+                                            callback(result);
+                                        })
+                                    } else {
+                                        callback(null, 'depart')
+                                    }
+                                },
+                                police: function (callback) {                //警员处理
+                                    if (policeList.length > 0) {
+                                        personModel.update({
+                                            atd_groupid: data.id,
+                                            responsible: 0
+                                        }, {where: {id: {$in: policeList}}}).then(function (res) {
+                                            callback(null, 'police')
+
+                                        }).catch(function (err) {
+                                            if (err) {
+                                                console.log(err)
+                                                result = new AjaxJson(false, "修改部门错误", null, null);
+                                                callback(result);
+                                            }
+                                        })
+                                    } else {
+                                        callback(null, 'police')
+                                    }
+                                },
+                                //考勤组负责人
+                                shiftPolice: function (callback) {
+                                    var idList = data.adAttendanceClerk.map(({id}) => id);
+                                    personModel.update({
+                                        atd_groupid: data.id,
+                                        responsible: 1
+                                    }, {where: {id: {$in: idList}}}).then(function (res) {
+                                        callback(null, 'shiftPolice')
+                                    }).catch(function (err) {
+                                        if (err) {
+                                            result = new AjaxJson(false, "修改部门错误", null, null);
+                                            callback(result);
+                                        }
+                                    })
+                                },
+                                //考勤班次
+                                schedule: function (callback) {
+                                    if (data.type !== 2) {       //不等于自由工时
+                                        var scheduleList = [];
+                                        for (var item of data.scheduleData) {
+                                            scheduleList.push({
+                                                id: uuid.v1(),
+                                                scheduleid: item,
+                                                groupid: data.id
+                                            })
+                                        }
+                                        scheduleGroupModel.bulkCreate(scheduleList).then(function (res) {
+                                            callback(null, 'schedule')
+                                        }).catch(function (err) {
+                                            if (err) {
+                                                console.log(err)
+                                                result = new AjaxJson(false, "班次考勤组管理错误", null, null);
+                                                callback(result);
+                                            }
+                                        })
+                                    } else {
+                                        callback(null, 'schedule')
+                                    }
+
+                                },
+                                //考勤地址
+                                address: function (callback) {
+                                    for (var item of data.atdWayTableData) {
+                                        item.id = uuid.v1();
+                                    }
+                                    atdAddressModel.bulkCreate(data.atdWayTableData).then(function (res) {
+                                        try {
+                                            var addressidList = [];
+                                            for (var item of data.atdWayTableData) {
+                                                addressidList.push({
+                                                    id: uuid.v1(),
+                                                    groupid: data.id,
+                                                    addressid: item.id
+                                                })
+                                            }
+                                            addressGroupModel.bulkCreate(addressidList).then(function (res) {
+                                                callback(null, 'address')
+                                            }).catch(function (err) {
+                                                if (err) {
+                                                    console.log(err)
+                                                    result = new AjaxJson(false, "地址考勤组关联失败", null, null);
+                                                    callback(result);
+                                                }
+                                            })
+                                        } catch (e) {
+                                            result = new AjaxJson(false, "地址考勤组关联失败", null, null);
+                                            callback(result);
+                                        }
+
+
+                                    }).catch(function (err) {
+                                        if (err) {
+                                            console.log(err)
+                                            result = new AjaxJson(false, "地址添加错误", null, null);
+                                            callback(result);
+                                        }
+                                    })
+                                }
+
+                            }, function (err, results) {
+                                if (err) {
+                                    console.log(err);
+                                    result = new AjaxJson(false, "插入错误", null, null);
+                                    callback(result);
+                                }
+                                if (results) {
+                                    console.log('results', results)
+                                    result = new AjaxJson(true, "成功", null, null);
+                                    callback(result);
+                                }
+                            })
+
+
+                        },
+
+
+                    }, function (error, result) {
+                        console.log('error:', error);
+                        console.log('result:', result)
+                    });
+                    //考勤人员
+
+                    // callback({flag: true});
+                }).catch(function (err) {
+                    if (err) {
+                        callback({flag: false, msg: '插入错误'});
+                    }
+                })
+            }
+        }).catch(function (err) {
+            if (err) {
+                return callback({flag: false, msg: '查询错误'});
+            }
+        })
+
+    }
+};
+
+
+//删除考勤组信息
+exports.deleteGroupInfo = function (data, callback) {
+    var where = {};
+    var where2 = {};
+    var where3={};
+    var arr = [];
+    var result = {};
+    if (data.params) {
+        var _list = data.params;
+        for (var i in _list) {
+            arr.push(_list[i].id);
+        }
+        where = {id: {$in: arr}};
+        where2 = {atd_groupid: {$in: arr}};
+        where3={groupid:{$in: arr}}
+    } else {
+        where = {id: data.id};
+        where2 = {atd_groupid: data.id};
+        where3={groupid:data.id}
+    }
+    personModel.count({
+        where: where2
+    }).then(function (res) {
+        if (res > 0) {
+            // result = new AjaxJson(false,"所选考勤组有参与考勤人员，请先删除取消考勤人员", res, null);
+            result.success = false;
+            result.msg = '所选考勤组有参与考勤人员，请先删除取消考勤人员';
+            result.result = res;
+            return callback(result)
+        } else {
+            attendGroupModel.destroy({where: where}).then(function (res) {
+                scheduleGroupModel.destroy({where: where3}).then(function (res) {
+                    addressGroupModel.destroy({where: where3}).then(function (res) {
+                        var addlist=[];
+                        data.atd_address_groups.forEach(item=>addlist.push(item.atd_address.id));
+                        var where4={id:{$in: addlist}}
+                        atdAddressModel.destroy({where: where4}).then(function (res) {
+                            callback({success:true,msg:"考勤组删除成功"})
+                        }).catch(function (err) {
+                            if (err) {
+                                console.log(err);
+                                return callback({success:false,msg:"地址删除失败"})
+                            }
+                        })
+
+                    }).catch(function (err) {
+                        if (err) {
+                            console.log(err);
+                            return callback({success:false,msg:"地址关联删除失败"})
+                        }
+                    })
+                }).catch(function (err) {
+                    if (err) {
+                        console.log(err);
+                        return callback({success:false,msg:"班组关联删除失败"})
+                    }
+                })
+
+
+            }).catch(function (err) {
+                if (err) {
+                    console.log(err);
+                    return callback({success:false,msg:"考勤组删除失败"})
+                }
+            })
+        }
+    }).catch(function (err) {
+        console.log(err);
+        if (err) {
+            console.log(err);
+            return callback({flag: false, msg: '查询用户角色表出错'});
+        }
+    })
+}
+
+
+//查询考勤组信息
+exports.getGroupList = function (data, callback) {
+    data.start = (parseInt(data.page) - 1) * parseInt(data.pageSize)
+    var where = {};
+    if (data.atd_name) {
+        where = {
+            atd_name: {
+                $like: '%' + data.atd_name + '%'
+            }
+        }
+    }
+    var result = {};
+    attendGroupModel.findAll({
+        where: where,
+        limit: parseInt(data.pageSize),
+        offset: parseInt(data.start),
+        include: [
+            {
+                model: scheduleGroupModel, attributes: ['id'], include: [
+                {model: atdScheduleModel}
+            ]
+            },
+            {
+                model: addressGroupModel, attributes: ['id'], include: [
+                {model: atdAddressModel}
+            ]
+            },
+            {
+                model: personModel,
+            }
+        ]
+    }).then(function (res) {
+        console.log(res)
+        result = new AjaxJson(true, "查询成功", res, null);
+        return callback(result)
+    }).catch(function (err) {
+        if (err) {
+            console.log(err);
+            result = new AjaxJson(false, err, null, null);
+            return callback(result)
+        }
+    })
+}
+
+
+//通过ID查询考勤信息
+
+exports.getGroupById = function (data, callback) {
+    var where = {};
+    where = {
+        id: data.id
+    }
+    attendGroupModel.findAll({
+        where: where,
+        include: [
+            {
+                model: scheduleGroupModel, attributes: ['id'], include: [
+                {model: atdScheduleModel}
+            ]
+            },
+            {
+                model: addressGroupModel, attributes: ['id'], include: [
+                {model: atdAddressModel}
+            ]
+            },
+            {
+                model: personModel,
+            }
+        ]
+    }).then(function (res) {
+        console.log(res)
+        result = new AjaxJson(true, "查询成功", res, null);
+        return callback(result)
+    }).catch(function (err) {
+        if (err) {
+            console.log(err);
+            result = new AjaxJson(false, err, null, null);
+            return callback(result)
+        }
+    })
+
+}

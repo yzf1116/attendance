@@ -1,0 +1,487 @@
+<template>
+  <div>
+    <el-row :gutter="20" class="selectDepart">
+      <el-col :span="12">
+        <p class="departTitle">选择部门与人员</p>
+        <div class="surround" v-loading="loading">
+          <el-input
+            placeholder="输入关键字进行过滤"
+            v-model="filterText">
+          </el-input>
+          <el-tree
+            :disabled="true"
+            ref="treeChoose"
+            style="height: 300px;overflow: auto;"
+            show-checkbox
+            class="filter-tree"
+            :data="TreeData"
+            node-key="id"
+            :render-content="renderContent"
+            :props="defaultProps"
+            @check-change="treeChange"
+            :filter-node-method="filterNode"
+          >
+          </el-tree>
+        </div>
+      </el-col>
+      <el-col :span="12">
+        <p class="departTitle">已选部门与人员</p>
+        <div class="surround">
+          <el-tree
+            ref="rightTreeChoose"
+            style="height: 335px;overflow: auto;"
+            class="filter-tree"
+            :expand-on-click-node="false"
+            :default-expand-all="true"
+            :data="rightTree"
+            node-key="id"
+            :render-content="rightRenderContent"
+            :props="defaultProps"
+
+
+          >
+          </el-tree>
+          <!--<ul v-if="rightCheckList.length" class="checklist">-->
+          <!--<li v-for="(item,index) in rightCheckList" v-show="item.show">-->
+          <!--&lt;!&ndash;<el-tag :close-transition="true" type="primary" style="margin-right: 5px;">{{item.parentname}}</el-tag>&ndash;&gt;-->
+          <!--&lt;!&ndash;<span :style="styleObject"&ndash;&gt;-->
+          <!--&lt;!&ndash;v-show="item.show">{{item.name.substring(0, 1)}}</span>&ndash;&gt;-->
+          <!--<span> {{ item.name }}</span>-->
+          <!--<span style="float: right;">-->
+          <!--<el-button size="mini" @click="removeNode(item)" type="danger">删除</el-button>-->
+          <!--</span>-->
+
+          <!--</li>-->
+          <!--</ul>-->
+
+        </div>
+
+      </el-col>
+    </el-row>
+
+    <div style="text-align: right;margin-top: 10px;">
+          <span slot="footer" class="dialog-footer">
+    <el-button @click="closeDialog(0)">取 消</el-button>
+    <el-button type="primary" @click="closeDialog(1)">确 定</el-button>
+  </span>
+    </div>
+
+  </div>
+</template>
+
+<script>
+  export default {
+    data() {
+      return {
+        newdata: [],
+        loading: false,
+        rightCheckList: [],
+        filterText: '',
+        TreeData: [],
+        defaultProps: {
+          children: 'children',
+          label: 'name',
+        },
+        parmentList: [],
+        policeList: [],
+        rightTree: [],
+      }
+    },
+    methods: {
+      /**
+       * 渲染右侧树结构
+       * @param h
+       * @param node
+       * @param data
+       * @param store
+       */
+      rightRenderContent(h, {node, data, store}) {
+          if(node.data.type=='depart'){
+            return h(
+              'span', {}, [
+                h('span', {}, node.data.name),
+                h('span', {
+                  style: {
+                    float: 'right'
+                  }
+                }, [
+                  h('el-button', {
+                    attrs: {
+                      size: 'mini',
+                      type: "danger"
+                    },
+                    on: {
+                      click: () => {
+                        this.$refs.treeChoose.setChecked(data, false, true)
+                      }
+                    }
+                  }, '删除'),
+                ])
+              ]
+            )
+          }else{
+            return h(
+              'span', {}, [h('span', {
+                style: {
+                  width: '20px',
+                  background: 'rgba(21, 144, 234, 0.73)',
+                  padding: '5px',
+                  'border-radius': '15px',
+                  color: '#fff',
+                  margin: '0 5px 0 0'
+                },
+              }, node.data.name.substring(0, 1)),
+                h('span', {}, node.data.name),
+                h('span', {
+                  style: {
+                    float: 'right'
+                  }
+                }, [
+                  h('el-button', {
+                    attrs: {
+                      size: 'mini',
+                      type: "danger"
+                    },
+                    on: {
+                      click: () => {
+                        this.$refs.treeChoose.setChecked(data, false, true)
+                      }
+                    }
+                  }, '删除'),
+                ])
+              ]
+            )
+          }
+
+      },
+      /**
+       * Tree树节点显示区分（组织机构、警员）
+       *@param h createlement 方法
+       *@param node   节点
+       */
+      renderContent(h, node){
+        if (node.data.type == 'depart') {
+          return h(
+            'span',
+            {
+              class: {
+                foo: true
+              },
+              style: {
+//              color: 'red',
+                fontSize: '14px'
+              },
+            },
+            [
+              h('i', {
+                class: {
+                  'el-icon-message': true
+                },
+                style: {
+                  color: '#20a0ff',
+                  margin: '0 5px 0 0',
+                }
+              }),
+              h('span', node.data.name)
+            ]
+          )
+        } else {
+          return h(
+            'span',
+            {
+              class: {
+                foo: true
+              },
+              style: {
+//              color: 'red',
+                fontSize: '14px'
+              },
+            },
+            [
+              h('span', {
+                style: {
+                  width: '20px',
+                  background: 'rgba(21, 144, 234, 0.73)',
+                  padding: '5px',
+                  'border-radius': '15px',
+                  color: '#fff',
+                  margin: '0 5px 0 0'
+                },
+              }, node.data.name.substring(0, 1)),
+              h('span', node.data.name)
+            ]
+          )
+        }
+
+      },
+      /**
+       * 关闭dialog
+       * @value 关闭状态 0 取消 1 确定
+       */
+      closeDialog(value){
+        this.rightCheckList = [];
+        if (value == 0) {
+          if (this.data.policeList.length == 0) {
+
+            this.policeList = [];
+            this.rightTree=[];
+          } else {
+            this.policeList = this.data.policeList;
+            this.rightTree=this.data.defalut;
+          }
+
+        }
+        var obj = {};
+        obj.policeList = Object.assign([], this.policeList);
+        obj.defalut = Object.assign([], this.rightTree);
+        this.$emit('close', {
+          dialog: value,
+          dialogVisible: false,
+          CheckedLists: obj,
+          type: this.type
+        });
+
+        this.getPlOrgListToTree();
+      },
+
+      /**
+       *查询组织结构信息(树)
+       */
+      async getPlOrgListToTree(parms){
+        try {
+          const _self = this;
+          let parm = {};
+          if (parms) {
+            parm = parms
+          }
+          _self.loading = true;
+          const callBackData = await _self.$http.get('/business/plOrg/getallplorgandpolicelist', {params: parm});
+          if (callBackData.data.success) {   //查询成功
+            const result = callBackData.data.result;
+            _self.TreeData = _self.toTreeData(result);
+//            _self.$nextTick(function () {
+//              _self.$refs.treeChoose.setCheckedNodes(_self.data.policeList);
+//            });
+
+            _self.loading = false;
+          } else {
+            _self.loading = false;
+            _self.$message({
+              message: callBackData.data.msg,
+              type: 'warning'
+            });
+          }
+        } catch (err) {
+        }
+
+
+      },
+
+      /**
+       * 格式转树状结构
+       * @param   {Array}      原数据
+       * @param   {String}    id的字符串
+       * @param   {String}    父id的字符串
+       * @param   {String}    children的字符串
+       * @return  {Array}     数组
+       */
+      transData(a, idStr, pidStr, chindrenStr){
+        var r = [], hash = {}, id = idStr, pid = pidStr, children = chindrenStr, i = 0, j = 0, len = a.length;
+        for (; i < len; i++) {
+          hash[a[i][id]] = a[i];
+        }
+        for (; j < len; j++) {
+          var aVal = a[j], hashVP = hash[aVal[pid]];
+          if (hashVP) {
+            !hashVP[children] && (hashVP[children] = []);
+            hashVP[children].push(aVal);
+          } else {
+            r.push(aVal);
+          }
+        }
+        return r;
+      },
+      /**
+       * 组合组织机构信息构建树结构信息
+       *@param {Object} data 组织机构信息
+       */
+      toTreeData(data){
+        var pos = {};
+        var tree = [];
+        var i = 0;
+
+        while (data.length != 0) {
+          if (data[i].parentid == '1') {
+            var children = [];
+            if (data[i].pl_people.length > 0) {
+              for (var item of data[i].pl_people) {
+                children.push({
+                  id: item.id,
+                  name: item.police_name,
+                  type: 'police',
+//                  parentname: data[i].org_name,
+                  parentid: data[i].id
+                })
+              }
+            }
+            tree.push({
+              id: data[i].id,
+              org_code: data[i].org_code,
+              name: data[i].org_name,
+              org_type: data[i].org_type,
+              parentid: data[i].parentid,
+              description: data[i].description,
+              children: children,
+              type: 'depart'
+            });
+            pos[data[i].id] = [tree.length - 1];
+            data.splice(i, 1);
+            i--;
+          } else {
+            var posArr = pos[data[i].parentid];
+            if (posArr != undefined) {
+              var obj = tree[posArr[0]];
+              for (var j = 1; j < posArr.length; j++) {
+                obj = obj.children[posArr[j]];
+              }
+              var children = [];
+              if (data[i].pl_people.length > 0) {
+                for (var item of data[i].pl_people) {
+                  children.push({
+                    id: item.id,
+                    name: item.police_name,
+                    parentid: data[i].id,
+//                    parentname: data[i].org_name,
+                    type: 'police'
+                  })
+                }
+              }
+
+              obj.children.push({
+                id: data[i].id,
+                org_code: data[i].org_code,
+                name: data[i].org_name,
+                org_type: data[i].org_type,
+                parentid: data[i].parentid,
+                type: 'depart',
+                description: data[i].description,
+                children: children
+              });
+              pos[data[i].id] = posArr.concat([obj.children.length - 1]);
+              data.splice(i, 1);
+              i--;
+            }
+          }
+          i++;
+          if (i > data.length - 1) {
+            i = 0;
+          }
+        }
+        return tree;
+      },
+      /**
+       * 过滤tree数据
+       * @param value
+       * @param data
+       * @returns {boolean}
+       */
+      filterNode(value, data) {
+        if (!value) return true;
+        return data.name.indexOf(value) !== -1;
+      },
+
+      /**
+       *tree点击事件
+       * @param data
+       * @param isCheck
+       * @param childerCheck
+       */
+      treeChange(data, isCheck, childerCheck){
+        this.policeList = [];
+        let nodeData = this.$refs.treeChoose.getCheckedNodes();
+        let newdata = JSON.parse(JSON.stringify(nodeData));
+        for (let item of newdata) {
+          item.children = [];
+        }
+        for (let item of nodeData) {
+          if (item.type == 'police') {
+            this.policeList.push(item)
+          }
+        }
+        console.warn(data)
+        this.$store.dispatch('setApprove',this.policeList);
+        this.rightTree = this.transData(newdata, 'id', 'parentid', 'children')
+      },
+
+      /**
+       * 移除节点
+       * @param data
+       */
+      removeNode(data){
+        this.$refs.treeChoose.setChecked(data, false, true)
+      },
+    },
+    components: {},
+    created() {
+    },
+    mounted() {
+      this.getPlOrgListToTree();
+
+    },
+    updated() {
+
+    },
+    watch: {
+      filterText(val) {
+        this.$refs.treeChoose.filter(val);
+      },
+      data(){
+        this.getPlOrgListToTree();
+      }
+
+    },
+    props: ['dialogVisible', 'title', 'data', 'type']
+  }
+</script>
+
+<!-- 添加 "scoped " css作用域只作用于本文件，不作用全局-->
+<style>
+
+
+  .departTitle {
+    padding: 10px;
+  }
+
+  .surround {
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #bfcbd9;
+
+  }
+
+  .filter-tree {
+    margin-top: 10px;
+  }
+
+  .rightUl {
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #bfcbd9;
+    height: 350px;
+    overflow: auto;
+  }
+
+  .surround > ul > li {
+    list-style: none;
+    margin: 10px;
+  }
+
+  .selectDepart .el-tree {
+    border: 1px solid #fff;
+  }
+
+  .checklist {
+    padding: 5px;
+    list-style: none;
+  }
+</style>

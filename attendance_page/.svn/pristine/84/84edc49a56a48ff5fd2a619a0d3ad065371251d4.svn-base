@@ -1,0 +1,742 @@
+<template>
+    <div>
+        <el-row :gutter="3">
+            <el-col :xs="tabSize[0]" :sm="tabSize[1]" :md="tabSize[2]" :lg="tabSize[3]">
+                <el-form :inline="true" :model="formInline" class="demo-form-inline" ref="formInline">
+                    <el-form-item label="组织机构" prop="departid">
+                         <el-select size="mini" v-model="formInline.departid" multiple placeholder="请选择">
+                            <el-option
+                                v-for="(item ,index) in options"
+                                :key="item.id"
+                                :label="item.departname + ' ('+item.org_code+')'"
+                                :value="item.id">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="用户名" prop="username">
+                        <el-input size="mini" v-model="formInline.username" placeholder="用户名"></el-input>
+                    </el-form-item>
+                    <el-form-item label="真实姓名" prop="realname">
+                        <el-input size="mini" v-model="formInline.realname" placeholder="用户名"></el-input>
+                    </el-form-item>
+                    <el-form-item>
+                        <el-button size="mini" type="primary" icon="search" @click="onSearch('formInline')">查询</el-button>
+                        <el-button size="mini" type="info" @click="resetForm('formInline')"><icon name="refresh" class="custom-icon"></icon>重置</el-button>
+                        <el-button size="mini" type="success" icon="plus" @click="handleAdd">新增</el-button>
+                        <el-button size="mini" type="warning" icon="edit" @click="checkPassWord">修改密码</el-button>
+                    </el-form-item>
+                </el-form>
+                <!--表单-->
+                <el-table
+                    :data="sysUserTableData"
+                    border
+                    :height="this.$store.state.gTableHeight"
+                    @selection-change="handleSelectionChange"
+                    v-loading="loading"
+                    style="width: 100%">
+                    <el-table-column
+                        type="selection"
+                    >
+                    </el-table-column>
+                    <el-table-column
+                        prop="username"
+                        label="用户名"
+                    >
+                    </el-table-column>
+                    <el-table-column 
+                        min-width="100"
+                        prop="realname"
+                        label="真实姓名">
+                    </el-table-column>
+                    <el-table-column 
+                        min-width="100"
+                        prop="departname"
+                        label="所属部门">
+                    </el-table-column>
+                     <el-table-column 
+                        min-width="70"
+                        prop="gender"
+                        label="性别">
+                    </el-table-column>
+                     <el-table-column 
+                        min-width="130"
+                        prop="phone"
+                        label="手机号码">
+                    </el-table-column>
+                    <el-table-column 
+                        min-width="160"
+                        prop="last_login_time"
+                        :formatter="dateFormatFun"
+                        label="最近登录时间">
+                    </el-table-column>
+                    <el-table-column
+                        label="状态"
+                        width="90"
+                        >
+                        <template scope="scope">
+                            <el-switch
+                                v-model="scope.row.status" 
+                                on-value=1 
+                                off-value=0
+                                on-text="激活"
+                                off-text="锁定"
+                                :disabled="scope.row.username==='admin'"
+                                @change="changeStatus(scope.$index, scope.row)">
+                            </el-switch>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="操作" width="250">
+                        <template scope="scope">
+                            <el-button
+                                size="mini" 
+                                type="primary"
+                                @click="handleEdit(scope.$index, scope.row)">编辑
+                            </el-button>
+                            <el-button
+                                size="mini"
+                                @click="handleRole(scope.$index, scope.row)" type="info">查看角色
+                            </el-button>
+                            <el-button
+                                size="mini"
+                                type="danger"
+                                @click="handleDelete(scope.$index, scope.row)">删除
+                            </el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+                <paging @emitsizechange="handleSizeChange"
+                        @emitcurrentchange="handleCurrentChange"
+                        :currentPage="tabPage.currentPage"
+                        :pageSizes="tabPage.pageSizes"
+                        :pageSize="tabPage.pageSize"
+                        :total="tabPage.totalNum">
+                </paging>
+            </el-col>
+            <el-col :xs="24" :sm="24" :md="6" :lg="6" v-show="tabSize[3]===18">
+                <rights-Tree :users="usersList" :dataTree="dataTree" :defaultKey="defaultKey" :userid="userid" @changeUser="getRoleByUser"></rights-Tree>
+            </el-col>
+        </el-row>
+        <!--dialog-->
+        <el-dialog v-bind:title="formTitle" v-model="dialogInfo" :close-on-click-modal="false" v-on:close="resetForm('ruleForm')" size="tiny">
+            <el-form :model="ruleForm" :rules="rules" ref="ruleForm" label-width="100px">
+                <el-form-item label="用户名" prop="username">
+                    <el-input size="small" v-model="ruleForm.username" :disabled="statusInfo===true"></el-input>
+                </el-form-item>
+                <el-form-item label="密码" prop="password" v-if="statusInfo===false">
+                    <el-input size="small" v-model="ruleForm.password" type="password"></el-input>
+                </el-form-item>
+                <el-form-item label="确认密码" prop="checkPass" v-if="statusInfo===false">
+                    <el-input size="small" v-model="ruleForm.checkPass" type="password"></el-input>
+                </el-form-item>
+                <el-form-item label="真实姓名" prop="realname">
+                    <el-input size="small" v-model="ruleForm.realname"></el-input>
+                </el-form-item>
+                <el-form-item label="所属部门" prop="departid">
+                    <el-select size="small" v-model="ruleForm.departid" placeholder="请选择">
+                        <el-option
+                            v-for="(item ,index) in options"
+                            :label="item.departname + ' ('+item.org_code+')'"
+                            :value="item.id"
+                            :key="index">
+                        </el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="性别" prop="gender">
+                    <el-select size="small" v-model="ruleForm.gender" placeholder="请选择">
+                        <el-option
+                            v-for="(item ,index) in sex"
+                            :label="item.typename"
+                            :value="item.typename"
+                            :key="index">
+                        </el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="手机号码" prop="phone">
+                    <el-input size="small" v-model="ruleForm.phone"></el-input>
+                </el-form-item>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+                <el-button size="mini" @click="dialogInfo=false">取 消</el-button>
+                <el-button size="mini" type="primary" @click="submitForm('ruleForm')">确 定</el-button>
+            </div>
+        </el-dialog>
+        <!--dialog changePsd-->
+        <el-dialog title="修改密码" v-model="dialogPass" :close-on-click-modal="false"
+                   v-on:close="resetForm('checkPassForm')" size="tiny">
+            <el-form :model="checkPassForm" :rules="rules" ref="checkPassForm" label-width="90px">
+                <el-form-item label="旧密码" prop="old_password">
+                    <el-input size="small" v-model="checkPassForm.old_password" type="password"></el-input>
+                </el-form-item>
+                <el-form-item label="新密码" prop="new_password">
+                    <el-input size="small" v-model="checkPassForm.new_password" type="password"></el-input>
+                </el-form-item>
+                <el-form-item label="确认密码" prop="check_password">
+                    <el-input size="small" v-model="checkPassForm.check_password" type="password"></el-input>
+                </el-form-item>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+                <el-button size="mini" @click="dialogPass=false">取 消</el-button>
+                <el-button size="mini" type="primary" @click="submitPassForm('checkPassForm')">确 定</el-button>
+            </div>
+        </el-dialog>
+
+        <router-view></router-view>
+    </div>
+</template>
+
+<script>
+    import paging from '../../common/Paging.vue'
+    import rightsTree from './rightRole.vue'
+    import {dateFormat} from '../../../../static/js/date.js'
+    export default {
+        data(){
+            var validatePass2 = (rule, value, callback) => {
+                if (value === '') {
+                    callback(new Error('请再次输入密码'));
+                } else if (value !== this.ruleForm.password) {
+                    callback(new Error('两次输入密码不一致!'));
+                } else {
+                    callback();
+                }
+            };//新增重复密码验证
+
+            var validateOldPass = (rule, value, callback) => {
+                var data = {
+                    id:this.sels[0].id,
+                    username:this.sels[0].username,
+                    password:value
+                }
+                if(value===""){
+                    callback(new Error('请输入旧密码'));
+                }else{
+                    this.$http.get('/system/user/checkpsd',{params:data}).then(res =>{
+                    if(res.data&&res.data.flag){
+                        callback();
+                    }else{
+                        callback(new Error('旧密码输入错误!'));
+                    }
+                    }).catch(err =>{
+                        if(err){
+                            callback(new Error('旧密码查询错误!'));
+                        }
+                    })
+                }
+               
+                // if (value === '') {
+                //     callback(new Error('请输入旧密码'));
+                // } else if (value !== this.sels[0].password) {
+                //     callback(new Error('旧密码输入错误!'));
+                // } else {
+                //     callback();
+                // }
+            };//旧密码验证
+            var validateNewPass = (rule, value, callback) => {
+                if (value === '') {
+                    callback(new Error('请再次输入新密码'));
+                } else if (value !== this.checkPassForm.new_password) {
+                    callback(new Error('两次输入新密码不一致!'));
+                } else {
+                    callback();
+                }
+            };//修改密码验证
+
+            var isMobilePhone = (rule, value, callback) => {
+                var reg =  /^1[34578]\d{9}$/;//手机号码
+                if(!value){
+                    callback(new Error('请输入手机号码'));
+                }
+                setTimeout(() => {
+                    if (!reg.test(value)) {
+                    callback(new Error('请输入正确格式，如：18723346175'));
+                } else {
+                    callback();
+                }
+            }, 300);
+            };
+            return {
+                sysUserTableData: [],//用户列表数组
+                sels: [],//表格选中列
+                tabPage: {
+                    currentPage: 1,
+                    pageSize: 10,
+                    pageSizes: [10, 20, 30, 50]
+                },//分页信息
+                loading: true,
+                formInline: {//查询表单对象
+                    departid:undefined,
+                    username: '',
+                    realname:''
+                },
+                dialogInfo: false,//模态框是否显示标识
+                dialogPass: false,//修改密码模态显示标识
+                ruleForm: {},//新增表单数据
+                checkPassForm: {
+                    old_password:'',
+                    new_password:'',
+                    check_password:''
+                },//修改密码表单
+                options: [],//部门数组
+                rules: {
+                    username: [
+                        {required: true, message: '请输入用户名', trigger: 'blur'}
+                    ],
+                    password: [
+                        {required: true, message: '请输入密码', trigger: 'blur'}
+                    ],
+                    realname: [
+                        {required: true, message: '请输入真实姓名', trigger: 'blur'}
+                    ],
+                    phone:[
+                        {required: true, validator:isMobilePhone, trigger: 'change'}
+                    ],
+                    gender:[
+                        {required: true, message:'请选择性别', trigger: 'change'}
+                    ],
+                    checkPass: [
+                        {required: true,validator: validatePass2, trigger: 'blur'}
+                    ],
+                    old_password: [
+                        {required: true, message: '请输入旧密码', trigger: 'blur'},
+                        {validator: validateOldPass, trigger: 'blur'}
+                    ],
+                    new_password: [
+                        {required: true, message: '请输入新密码', trigger: 'blur'}
+                    ],
+                    check_password: [
+                        {validator: validateNewPass, trigger: 'blur'}
+                    ]
+                },
+                qxdj: [],//权限等级数组
+                loginUser:'',//记录登录用户
+                formTitle: '',//新增编辑模态框title
+                isUser:false,//判断是否为当前用户
+                userPsd:'',//获取当前用户密码
+
+                dataTree: [],//用户角色树
+                defaultKey:[],//选中项
+                defaultProps: {
+                    children: 'children',
+                    label: 'rolename'
+                },
+                userid:'',//选中用户id
+                usersList:[],//所有用户下拉
+                tabSize:[24,24,24,24],//栅格用户列表
+                statusInfo:false,//用户名输入框是否可编辑
+                sex:[],//性别下拉
+            }
+        },
+        created: function () {
+
+        },
+        mounted: function () {
+            this.openScreen();
+            this.getSysUserList();
+            this.getsysDepartName();
+            this.loginUser = document.cookie.split('username=')[1];//获取当前用户名
+            this.getSysRoles();
+            this.getSysUserName();
+            this.sex = this.getDicData('sex');
+        },
+        components: {
+            paging,rightsTree
+        },
+        computed: {},
+        methods: {
+            /**
+             * 加载动画
+             */
+            openScreen() {//加载...
+                this.loading = true;
+                setTimeout(() => {
+                    this.loading = false;
+            }, 200);
+            },
+            getDicData(str){//获取数据字典相关内容
+                var dicList = JSON.parse(this.$getStore("gDictionaryList"))
+                var filterarray = $.grep(dicList, function (value) {
+                    return value.typegroupcode === str;//筛选出其中一个，仍为一个数组
+                });
+                if (filterarray.length > 0) {//防止前端报错
+                    return filterarray[0].typeList;
+                }
+            },
+            /**********绑定角色start************/
+            handleRole(index,row){
+                this.tabSize = [24,24,18,18];
+                this.userid = row.id; 
+            },
+            getRoleListByUid(params){
+                var _self = this;
+                this.$http.get('/system/role/getsysroleuser',{params:params})
+                    .then(function (res) {
+                        if(res.data&&res.data.flag){
+                            _self.defaultKey = res.data.data;
+                        }else{
+                            _self.$message({
+                                message:'查询错误',
+                                type:'warning'
+                            })
+                        }
+                    }).catch(function (error) {
+                    console.log(error)
+                });
+            },
+            getSysRoles(){
+                var _self = this;
+                this.$http.get('/system/role/getsysrolesname')
+                    .then(function (res){
+                        _self.dataTree = res.data.data;
+                    }).catch(function (error) {
+                    console.log(error)
+                });
+            },
+            getRoleByUser(data){
+                this.userid = data;
+                var params = {userid:data};
+                this.getRoleListByUid(params);
+            },
+            dateFormatFun(row, colum){//时间格式化
+                if (row[colum.property] != null) {
+                    var d = row[colum.property];
+                    return dateFormat(new Date(d),"yyyy-MM-dd hh:mm:ss")
+                    
+                }
+            },
+            getSysUserList(params){
+                var data = {
+                    page: this.tabPage.currentPage,
+                    pageSize: this.tabPage.pageSize,
+                    options:this.formInline,
+                };
+                if (params) {
+                    data = params;
+                }
+                var _self = this;
+                this.$http.get('/system/user/getsysuserlist', {params: data})
+                    .then(function (res) {
+                        if (res.data && res.data.flag) {
+                            _self.sysUserTableData = res.data.data;
+                            _self.tabPage.totalNum = res.data.count;
+                        }
+                    }).catch(function (error) {
+                    console.log(error);
+                    _self.$message({
+                        message: '获取失败',
+                        type: 'warning'
+                    });
+                });
+            },
+            /**
+             * 修改密码按钮点击事件
+             *
+             */
+            checkPassWord(){
+                if (this.sels.length > 1) {
+                    this.$message({
+                        message: '只能选择一个用户',
+                        type: 'warning'
+                    });
+                } else if (this.sels.length === 1) {
+                    this.dialogPass = true;
+                    this.checkPassForm.id = this.sels[0].id;
+                    this.checkPassForm.username = this.sels[0].username;
+                } else {
+                    this.$message({
+                        message: '请选择一个用户',
+                        type: 'warning'
+                    });
+                }
+            },
+            submitPassForm(formName){
+                var params = {
+                    id: this.checkPassForm.id,
+                    password: this.checkPassForm.new_password,
+                    username:this.checkPassForm.username
+                };
+                var _self = this;
+                this.$refs[formName].validate(function (valid) {
+                    if (valid) {
+                        _self.$http.post('/system/user/savesysuserinfo', params).then(function (res) {
+                            if (res.data && res.data.success) {
+                                _self.dialogPass = false;
+                                if(_self.checkPassForm.username===_self.loginUser){//判断是否为当前用户
+                                    var date = new Date();
+                                    date.setTime(date.getTime() - 10000);
+                                    document.cookie = "islogin=true; expires=" + date.toGMTString();
+                                    _self.$router.push('/login');//返回登录页
+                                }else{
+                                    _self.$message({
+                                        message:'操作成功',
+                                        type:'success'
+                                    })
+                                    _self.getSysUserList();
+                                }
+
+                            }else{
+                                _self.$message({
+                                    message:res.data.msg,
+                                    type:'warning'
+                                })
+                            }
+
+                        }).catch(function (err) {
+                            console.log(err);
+                        })
+
+                    } else {
+                        console.log('提交错误');
+                    }
+                })
+
+
+            },
+            /**
+             * 查询部门列表
+             */
+            getsysDepartName(){
+                var _self = this;
+                this.$http.get('/system/depart/getsysdepartname').then(function (res) {
+                    if (res.data && res.data.flag) {
+                        var arr = res.data.data;
+                        _self.options = arr;
+                    }
+                }).catch(function (err) {
+                    console.log(err);
+                })
+            },
+            /**
+             * 查询 根据用户名模糊查询
+             * @params {String} formName 进行验证
+             */
+            onSearch(formName){
+                var params = {options:this.formInline};
+                params.page = 1;
+                params.pageSize = this.tabPage.pageSize;
+                this.tabPage.currentPage =1;//每次查询默认第一页
+                var _self = this;
+                _self.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        _self.getSysUserList(params);
+                    } else {
+                        console.log('提交错误');
+                return false;
+            }
+            });
+            },
+            /**
+             * 点击新增按钮
+             */
+            handleAdd(){
+                this.dialogInfo = true;
+                this.formTitle = "新增用户信息";
+                this.ruleForm = Object.assign({}, {
+                    username:'',
+                    password:'',
+                    checkPass:'',
+                    realname:'',
+                    phone:'',
+                    gender:'',
+                    departid:undefined
+                });
+                this.statusInfo = false;
+            },
+            /**
+             * 保存用户信息
+             * @params {String} formName 用于验证
+             */
+            submitForm(formName){
+                var _self = this;
+                var params = _self.ruleForm;
+                this.$refs[formName].validate(function (valid) {
+                    if (valid) {
+                        _self.$http.post('/system/user/savesysuserinfo', params)
+                            .then(function (res) {
+                                if (res.data && res.data.success) {
+                                    _self.dialogInfo = false;
+                                    _self.getSysUserList();
+                                    _self.getSysUserName();
+                                    _self.$message({
+                                        message: '操作成功',
+                                        type: 'success'
+                                    });
+                                } else {
+                                    _self.$message({
+                                        message: res.data.msg,
+                                        type: 'error'
+                                    });
+                                }
+
+                            })
+                            .catch(function (error) {
+                                _self.$message({
+                                    message: '请求错误',
+                                    type: 'error'
+                                });
+                                console.log(error);
+                            });
+
+                    } else {
+                        console.log('提交错误');
+                        return false;
+                    }
+                });
+            },
+            /**
+             * 表单重置
+             * @params {Object} formName 表单名称
+             */
+            resetForm(formName){
+                this.$refs[formName].resetFields();
+                if(formName=='formInline'){
+                    this.getSysUserList();
+                }
+            },
+            /**
+             * 编辑按钮点击事件
+             * @params {Number} index  行号
+             * @params {Object} row 行对象
+             */
+            handleEdit(index, row) {
+                this.dialogInfo = true;
+                this.formTitle = "编辑用户信息";
+                this.ruleForm = Object.assign({}, row);
+                if (row.ws_sys_depart === null) {
+                    this.ruleForm.departid = undefined;
+                }
+                if(row.username ===this.loginUser){
+                    this.isUser = true;
+                    this.userPsd = row.password;
+                }else{
+                    this.isUser = false;
+                }
+                this.statusInfo = true;
+            },
+            /**
+             * 删除按钮点击事件
+             * @params {Number} index   行号
+             * @params {Object} row     行对象
+             */
+            handleDelete(index, row) {
+                var _self = this;
+                _self.deleteSysUserInfo(row);
+            },
+            /**
+             * 删除部门信息
+             * @params {Object} row|rows     行对象
+             */
+            deleteSysUserInfo(data){
+                var _self = this;
+                this.$confirm('此操作将永久删除选择用户信息, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    _self.$http.post('/system/user/delsysuserinfo', data).then(function (res) {
+                    if (res.data && res.data.flag) {
+                        _self.getSysUserList();
+                        _self.getSysUserName();
+                        _self.$message({
+                            message: '删除成功',
+                            type: 'success'
+                        });
+                    }else{
+                        _self.$message({
+                            message: res.data.msg,
+                            type: 'error'
+                        });
+                    }
+                }).catch(function (err) {
+                    console.log(err);
+                })
+            }).catch(() => {
+
+                });
+            },
+            /**
+             * 切换每页条数
+             * @params {Number} val 每页条数
+             */
+            handleSizeChange(val) {
+                this.tabPage.pageSize = val;
+                this.getSysUserList();
+            },
+            /**
+             * 切换页码
+             * @params {Number} val 页码
+             */
+            handleCurrentChange(val) {
+                this.tabPage.currentPage = val;
+                this.getSysUserList();
+            },
+            /**
+             * 多选框改变选中事件
+             * @params {Array} val 当前所有选中行对象数组
+             */
+            handleSelectionChange(val) {
+                this.multipleSelection = val;
+                this.sels = val;
+            },
+            /**
+             * 更改状态
+             * @param index
+             * @param row
+             */
+            changeStatus(index, row){
+                var _self = this;
+                var status = row.status == 0 ? '1' : row.status == 1 ? '0' : '1';
+                var params = {
+                    id: row.id,
+                    status: status
+                }
+                this.$http.post('/system/user/savesysuserinfo', params).then(function (res) {
+                    if (res.data && res.data.success) {
+                        _self.$message({
+                            message: '状态更新成功',
+                            type: 'success'
+                        });
+                        //_self.getSysUserList();
+                    }else{
+                        _self.$message({
+                            message: '状态更改失败',
+                            type: 'error'
+                        });
+                    }
+                }).catch(function (err) {
+                    console.log(err);
+                    _self.$message({
+                        message: '状态更改失败',
+                        type: 'error'
+                    });
+                })
+            },
+            /**
+             * 获取用户名下拉
+             */
+            getSysUserName(){
+                var _self = this;
+                this.$http.get('/system/user/getsysusername').then(function(res){
+                    if(res.data&&res.data.flag){
+                        _self.usersList = res.data.data;
+                    }else {
+                        _self.$message({
+                            message:'查询错误',
+                            type:'warning'
+                        })
+                    }
+                }).catch(function (err) {
+                    if(err){
+                        _self.$message({
+                            message:'连接错误',
+                            type:'error'
+                        })
+                    }
+                })
+            },
+
+        }
+    }
+</script>
+
+<style scoped>
+
+</style>

@@ -1,0 +1,230 @@
+<template>
+
+</template>
+
+<script>
+  import xlsx from 'static/js/xlsx.full.min.js';
+  export default {
+    data() {
+      return {
+      }
+    },
+    methods: {
+      resolveData(obj,table_name,table_model,http,cb){
+        var wb;//读取完成的数据
+        var rABS = typeof FileReader !== "undefined" && typeof FileReader.prototype !== "undefined" && typeof FileReader.prototype.readAsBinaryString !== "undefined";//是否将文件读取为二进制字符串
+        if (!obj.files) {
+          return;
+        }
+      var  XLSX=window.XLSX;
+        var _this=this;
+        var f = obj.files[0];
+        var reader = new FileReader();
+        var data_obj;
+        reader.onload = function (e) {
+          var data = e.target.result;
+          if (rABS) {
+           wb = XLSX.read(data, {type: 'binary'});
+          } else {
+            var arr = _this.fixdata(data);
+           wb = XLSX.read(btoa(arr), {type: 'base64'});
+          }
+          data_obj= _this.bianli(wb.Sheets[wb.SheetNames[0]])
+          _this.dataUpload(data_obj,table_name,table_model,http,cb)
+        };
+        if (rABS) {
+          reader.readAsBinaryString(f);
+        } else {
+          reader.readAsArrayBuffer(f);
+        }
+      },
+      fixdata(data) {
+        var o = "", l = 0, w = 10240;
+        for(; l<data.byteLength/w; ++l) o+=String.fromCharCode.apply(null,new Uint8Array(data.slice(l*w,l*w+w)));
+        o+=String.fromCharCode.apply(null, new Uint8Array(data.slice(l*w)));
+        return o;
+      },
+      dataUpload(excel_obj,table_name,table_model,http,cb){
+        var tip=table_model.tip;
+        var title=table_model.title;
+        var header=table_model.header;
+        var rows_num=1;
+        var data_arr=[];
+        var required_obj={};
+        var association_obj={};
+        var ass_data=table_model.ass_data;
+        var ass_table_obj={};
+        if(tip!=null){
+          rows_num++;
+        }
+        if(title!=null){
+          rows_num++;
+        }
+        if(header.length<1){
+          cb('上传错误',null);
+          return;
+        }
+        var char_obj={};
+        //检查上传excel是否和下载的模板字段一样
+        for(var i=0;i<header.length;i++){
+          var char=String.fromCharCode(64 + parseInt(i+1));
+            char_obj[char]={
+              field:header[i].field,
+              field_name:header[i].field_name,
+              is_required:header[i].is_required,
+              association_table:header[i].association_table,
+              association_type:header[i].association_type,
+              association_field:header[i].association_field,
+              map_field:header[i].map_field,
+              association_parent_field:header[i].association_parent_field
+            }
+          if(header[i].is_required==1){
+            required_obj[header[i].field]= char_obj[char]
+          }
+          if(header[i].association_type!=0){
+            association_obj[header[i].field]= char_obj[char]
+          }
+          if(excel_obj[char+rows_num]!=header[i].field_name){
+            cb('上传excel和下载的模板字段不相同',null)
+            return;
+          }
+        }
+        //将excel读出的数据转换为数组
+        for(var i=rows_num+1;;i++){
+          var obj={};
+          var item=0;
+          for(var j=0;j<header.length;j++){
+            var char=String.fromCharCode(64 + parseInt(j+1));
+            if(excel_obj[char+i]){
+              obj[char_obj[char].field]=excel_obj[char+i];
+              item++;
+            }
+          }
+          if(item==0){
+            break;
+          }
+          data_arr.push(obj)
+        }
+        //验证必填字段是否为空
+        for(var i=0;i<data_arr.length;i++){
+          for(var j in required_obj){
+            if(!data_arr[i][j]){
+              cb(' \''+required_obj[j].field_name+'\' 不能为空',null)
+              return;
+            }
+          }
+        }
+        //处理上下级部门，或者关联表
+        for(var i=0;i<data_arr.length;i++){
+          for(var j in association_obj){
+              if(association_obj[j].association_type==1){
+                  if(data_arr[i][j]==undefined){
+                    data_arr[i][j]='';
+                    continue;
+                  }
+                  var filed_arr=data_arr[i][j].split('-');
+                var index=0;
+                if(filed_arr.length>1){
+                  var item=filed_arr[filed_arr.length-2];
+                  for(var k=0;k<filed_arr.length-1;k++){
+                    if(!ass_data[j][filed_arr[k]]){
+                      if(k==0){
+                        if(ass_table_obj[filed_arr[k]]){
+                          ass_table_obj[filed_arr[k]].arr.push(i)
+                        }else{
+                          var param=[];
+                          if(filed_arr.length-2==k){
+                            param.push(i)
+                          }
+                          console.log(1,i,filed_arr.length,filed_arr.length-2==i,param)
+                          ass_table_obj[filed_arr[k]]={
+                            arr:param,
+                            name:filed_arr[k],
+                            parent:null
+                          }
+                        }
+                      }else{
+                        if(ass_table_obj[filed_arr[k]]){
+                          ass_table_obj[filed_arr[k]].arr.push(i)
+                        }else{
+                          if(index==0){
+                            var param=[];
+                            if(filed_arr.length-2==k){
+                              param.push(i)
+                            }
+                            ass_table_obj[filed_arr[k]]={
+                              arr:param,
+                              name:filed_arr[k],
+                              parent:null
+                            }
+                          }else{
+                            var param=[];
+                            if(filed_arr.length-2==k){
+                              param.push(i)
+                            }
+                            console.log(2,i,filed_arr.length,filed_arr.length-2==i,param)
+                            ass_table_obj[filed_arr[k]]={
+                              arr:param,
+                              name:filed_arr[k],
+                              parent:filed_arr[k-1]
+                            }
+                          }
+
+                        }
+
+
+                      }
+
+                      index++;
+                    }
+                  }
+                  if(index==0){
+                    data_arr[i][association_obj[j]['map_field']]=ass_data[j][item].id;
+                  }
+
+                }
+
+                  data_arr[i][j]=filed_arr[filed_arr.length-1];
+              }else if(association_obj[j].association_type==2){
+                if(data_arr[i][j]==undefined){
+                  data_arr[i][j]='';
+                  continue;
+                }
+               var item=data_arr[i][j];
+                if(ass_data[j][item]){
+                  data_arr[i][association_obj[j]['map_field']]=ass_data[j][item].id;
+                }
+             }
+          }
+        }
+        var _this=this;
+        var params = {table_name: table_name,data_arr:data_arr,ass_table_obj:ass_table_obj};
+        http.post('/tools/excel/uploadexcel', params).then(function (data) {
+          if(!data.err){
+            cb(null,'上传成功')
+          }else{
+            cb(data.err,'上传失败')
+          }
+
+        }).catch(function (err) {
+          cb(err,'上传失败')
+        })
+
+      },
+      bianli(obj){
+        var data={}
+        for(var i in obj){
+            data[i]=obj[i].v;
+        }
+        return data
+
+      }
+
+
+    }
+
+  }
+</script>
+<style>
+
+</style>

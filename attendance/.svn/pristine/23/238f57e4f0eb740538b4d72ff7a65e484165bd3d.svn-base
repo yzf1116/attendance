@@ -1,0 +1,44 @@
+/**
+ * Created by DELL on 2017/6/29.
+ */
+var attendGroup=require('../../../service/attendance/attendanceGroupService.js')
+
+
+module.exports={
+    get_index: function (req, res) {
+        res.send({msg: '考勤组请求'})
+    },
+    //保存考勤组
+    post_savegroupinfo:function (req,res) {
+        if(req.body){
+            attendGroup.saveGroupInfo(req.body,function (ret) {
+                res.send(ret);
+            })
+        }else{
+            res.send({flag:false,msg:'没有接收到相关参数'})
+        }
+    },
+    //删除考勤组
+    post_deletegroupinfo:function (req,res) {
+        if(req.body){
+            attendGroup.deleteGroupInfo(req.body,function (ret) {
+                res.send(ret);
+            })
+        }else{
+            res.send({flag:false,msg:'没有接收到相关参数'})
+        }
+    },
+    //查询考勤组
+    get_getgrouplist:function (req,res) {
+        attendGroup.getGroupList(req.query,function (ret) {
+            res.send(ret);
+        })
+    },
+    //通过id查询考勤组
+    get_getgroupbyid:function (req,res) {
+        attendGroup.getGroupById(req.query,function (ret) {
+            res.send(ret);
+        })
+
+    }
+}

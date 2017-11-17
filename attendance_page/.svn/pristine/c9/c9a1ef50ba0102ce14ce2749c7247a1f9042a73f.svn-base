@@ -1,0 +1,184 @@
+<template>
+  <div>
+    <el-row :gutter="20">
+      <el-col :span="12">
+        <p class="departTitle">选择部门与人员</p>
+        <div class="surround" v-loading="loading">
+          <el-input
+            placeholder="搜索"
+            icon="search"
+            v-model="searchInfo"></el-input>
+          <el-breadcrumb separator=">" style="margin: 10px 10px" v-for="(item,index) in breadOptions" :key="item.id">
+            <el-breadcrumb-item>{{item.org_name}}</el-breadcrumb-item>
+          </el-breadcrumb>
+          <div style="padding: 10px">
+            <el-checkbox :indeterminate="isIndeterminate" v-model="checkAll" @change="handleCheckAllChange">
+              全选
+            </el-checkbox>
+            <div style="margin: 15px 0;"></div>
+            <div v-if="parentList.length<1" style="color:#97a8be;font-size: 14px;text-align: center">
+              没有相关数据，请返回上一级
+
+            </div>
+            <el-checkbox-group v-model="checkedCities" @change="handleCheckedCitiesChange">
+              <div style="display: block;" v-for="item in parentList" :key="item.id">
+
+                <el-checkbox :label="item.name" :id="item.id" :key="item.id" style="margin: 5px 0">
+                  <span>{{item.name}}</span>
+                </el-checkbox>
+                <span style="float: right;" class="checkColor" v-show="item.show">
+                <icon name="folder-open-o"></icon>
+                <el-button type="text" size="small" :disabled="item.disabled" @click="nextDpeart(item)"> 下级</el-button>
+              </span>
+              </div>
+            </el-checkbox-group>
+          </div>
+
+        </div>
+
+      </el-col>
+      <el-col :span="12">
+        <p class="departTitle">已选部门与人员</p>
+
+        <div class="surround">
+          <ul v-for="(item,index) in rightInfo" :key="index">
+            <li>{{item}}</li>
+          </ul>
+        </div>
+
+      </el-col>
+    </el-row>
+
+  </div>
+</template>
+
+<script>
+  export default {
+    data() {
+      return {
+        loading: false,
+        rightInfo: [],
+        searchInfo: '',
+        checkAll: true,
+        checkedCities: [],
+        parentList: {},
+        isIndeterminate: true,
+        breadOptions: {},
+        parentID: ''
+      }
+    },
+    methods: {
+      /**
+       * 获取子节点数据
+       * @param item  当前节点数据
+       */
+      nextDpeart(item){
+        var params = {
+          id: item.id
+        }
+        var typeparms = {
+          parentid: item.id
+        }
+
+        var _self = this;
+        _self.getPlOrgName(typeparms);
+        _self.loading = true;
+
+        this.$http.get('/business/PoliceManage/findpolicedata', {
+          params: params
+        }).then(function (res) {
+          if (res.data && res.data.flag) {
+            var data = res.data.data || [];
+            data.forEach(item => item.show = false);
+            _self.parentList = _self.parentList.concat(data);
+            _self.loading = false;
+          }
+        }).catch(function (err) {
+          console.log(err);
+          _self.loading = false;
+        })
+
+
+      },
+      /**
+       * 全选操作
+       * @param event 数据集
+       */
+      handleCheckAllChange(event) {
+        var count = [];
+        var nameList = [];
+        this.parentList.forEach(item => count.push(item.name));
+//        this.parentList.forEach(item => nameList.push(item.name));
+        this.rightInfo = event.target.checked ? count : [];
+        ;
+        this.checkedCities = event.target.checked ? count : [];
+        this.isIndeterminate = false;
+      },
+      /**
+       * 单选操作
+       * @param value
+       */
+      handleCheckedCitiesChange(value) {
+        console.log(value)
+        this.rightInfo = value
+        let checkedCount = value.length;
+        this.checkAll = checkedCount === this.parentList.length;
+        this.isIndeterminate = checkedCount > 0 && checkedCount < this.parentList.length;
+      },
+
+      /**
+       *获取组织机构信息
+       * @param params  查询参数
+       * @param type
+       */
+      getPlOrgName(params){
+        var _self = this;
+        _self.loading = true;
+        this.$http.get('/business/plOrg/getplorgbytype', {
+          params: params
+        }).then(function (res) {
+          if (res.data && res.data.flag) {
+            var data = res.data.data;
+            data.forEach(item => item.show = true);
+            _self.parentList = data;
+            _self.loading = false;
+          }
+        }).catch(function (err) {
+          console.log(err);
+          _self.loading = false;
+
+        })
+      }
+    },
+    components: {},
+    created() {
+      var params = {
+        org_type: 1
+      }
+      this.getPlOrgName(params);
+    },
+    mounted() {
+    },
+    updated() {
+    },
+  }
+</script>
+
+<!-- 添加 "scoped " css作用域只作用于本文件，不作用全局-->
+<style scoped>
+  .surround {
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #bfcbd9;
+    height: 300px;
+    overflow: auto;
+  }
+
+  .departTitle {
+    padding: 10px;
+  }
+
+  .checkColor {
+    color: #0190fe;
+  }
+</style>

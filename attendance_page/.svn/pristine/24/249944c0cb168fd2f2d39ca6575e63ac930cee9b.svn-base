@@ -1,0 +1,156 @@
+<template>
+    <div class="typeValueDiv">
+        <div class="addBtn">
+            <el-button type="success" size="mini" icon="plus" @click="handleAdd">新增</el-button>
+        </div>
+        <!--table-->
+        <el-table :data="tableData"
+                  border
+                  style="width: 100%"
+                  tooltip-effect="dark">
+            <el-table-column
+                prop="typename"
+                label="类型名称">
+            </el-table-column>
+            <el-table-column
+                prop="typecode"
+                label="类型编码">
+            </el-table-column>
+            <el-table-column label="操作">
+                <template scope="scope">
+                    <el-button
+                        size="mini"
+                        type="primary"
+                        @click="handleEdit(scope.$index, scope.row)">编辑
+                    </el-button>
+                    <el-button
+                        size="mini"
+                        type="danger"
+                        @click="handleDelete(scope.$index, scope.row)">删除
+                    </el-button>
+                </template>
+            </el-table-column>
+        </el-table>
+        <!--form-->
+        <el-dialog title="类型录入" v-model="dialogInfo" size="tiny">
+            <el-form :model="ruleForm" :rules="this.$validateRule" ref="ruleForm" label-width="100px"
+                     class="new_ruleForm">
+                <el-form-item label="类型编码" prop="typecode">
+                    <el-input v-model="ruleForm.typecode" size="large"></el-input>
+                </el-form-item>
+                <el-form-item label="类型名称" prop="typename">
+                    <el-input v-model="ruleForm.typename" size="large"></el-input>
+                </el-form-item>
+            </el-form>
+
+
+            <div slot="footer" class="dialog-footer">
+                <el-button size="mini" @click="dialogInfo=false">取 消</el-button>
+                <el-button size="mini" type="primary" @click="submitForm('ruleForm')">确 定</el-button>
+            </div>
+        </el-dialog>
+    </div>
+</template>
+<script type="text/ecmascript-6">
+    export default {
+        data(){
+            return {
+                tableData: [],
+                formData: [],    //表单
+                dialogInfo: false, //模态框是否显示标识
+                ruleForm: {//新增表单数据
+                },
+                groupId: ''
+            }
+        },
+        components: {},
+        computed: {},
+        methods: {
+            getListData(){
+                var _self = this;
+                _self.$getList('/system/dictionary/finddictypelist', {groupId: this.groupId}, function (ret) {
+                    if (ret.data.status === true) {
+                        _self.tableData = ret.data.data;
+
+                    } else {
+                        _self.$message({
+                            message: '获取数据失败',
+                            type: 'warning'
+                        });
+                        return false;
+                    }
+                })
+
+            },
+            handleAdd(){
+                this.dialogInfo = true;
+                this.ruleForm = Object.assign({}, {});
+
+            },
+            handleEdit(index, row){
+                this.dialogInfo = true;
+                this.ruleForm = Object.assign({}, row);
+            },
+            handleDelete(index, row) {
+                var _self = this;
+                _self.$deleteOne('/system/dictionary/deletedictype', {id: row.id}, function (ret) {
+                    if (ret.data.status === true) {
+                        _self.getListData();
+                    }
+                });
+
+
+            },
+            onSearch(){
+            },
+            submitForm(formName){
+                var _self = this;
+                var data = _self.ruleForm;
+                var groupId = _self.groupId;
+                data.typegroupid = groupId;
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        _self.$submitForm('/system/dictionary/addorupdatedictype', data, function (ret) {
+                            if (ret.data.status === true) {
+                                _self.getListData();
+                            } else {
+                                _self.$message({
+                                    message: '获取数据失败',
+                                    type: 'warning'
+                                });
+                                return false;
+                            }
+                        })
+                    } else {
+                        console.log('提交错误');
+                        return false;
+                    }
+                });
+
+
+            },
+            resetForm(formName){
+                this.$refs[formName].resetFields();
+            }
+
+
+        }
+    }
+</script>
+<style scoped>
+    /*.typeValueDiv{*/
+    /*min-width: 350px;*/
+    /*!*margin-top: 40px;*!*/
+    /*width: 45%;*/
+    /*float: right;*/
+
+    /*}*/
+    .typeTitle span {
+        font-size: 13px;
+    }
+
+    .addBtn {
+        margin-bottom: 10px;
+    }
+
+</style>

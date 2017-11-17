@@ -1,0 +1,434 @@
+<template>
+    <div>
+        <el-row :gutter="3">
+            <el-col :xs="tabSize[0]" :sm="tabSize[1]" :md="tabSize[2]" :lg="tabSize[3]">
+                            <!--查询-->
+            <el-form :inline="true" :model="formInline" class="demo-form-inline" ref="formInline">
+                <el-form-item label="角色名称" prop="role_name">
+                    <el-input size="mini" v-model="formInline.role_name" placeholder="角色名称"></el-input>
+                </el-form-item>
+                <el-form-item>
+                    <el-button size="mini" type="primary" icon="search" @click="onSearch('formInline')">查询</el-button>
+                    <el-button size="mini" type="info" @click="resetForm('formInline')"><icon name="refresh" class="custom-icon"></icon>重置</el-button>
+                </el-form-item>
+                <el-form-item style="margin-left: 30px">
+                    <el-button size="mini" type="success" icon="plus" @click="handleAdd">新增</el-button>
+                    <el-button size="mini" type="danger" icon="delete" @click="batchRemove">批量删除</el-button>
+                </el-form-item>
+            </el-form>
+
+            <!--表单-->
+            <el-table
+                :data="policeRoleTableData"
+                highlight-current-row
+                border
+                v-loading="loading"
+                :height="this.$store.state.gTableHeight"
+                @selection-change="handleSelectionChange"
+                style="width: 100%">
+                <el-table-column
+                    type="selection">
+                </el-table-column>
+                <el-table-column
+                    min-width="120"
+                    prop="role_name"
+                    label="角色名称"
+                    sortable>
+                </el-table-column>
+                <el-table-column
+                    min-width="120"
+                    prop="role_code"
+                    label="角色编码"
+                    sortable>
+                </el-table-column>
+                 <el-table-column
+                    min-width="120"
+                    prop="role_type"
+                    label="角色类型"
+                    sortable>
+                </el-table-column>
+                <el-table-column
+                    prop="remarks"
+                    label="描述">
+                </el-table-column>
+                <el-table-column
+                    label="是/否主管"
+                    width="120"
+                    >
+                    <template scope="scope">
+                        <el-switch
+                            v-model="scope.row.role_level"
+                            on-text="是"
+                            off-text="否"
+                            @change="changeLevel(scope.$index, scope.row)">
+                        </el-switch>
+                    </template>
+                </el-table-column>
+                <el-table-column label="操作" width="240">
+                    <template scope="scope">
+                        <el-button
+                            size="mini"
+                            type="primary"
+                            @click="handleEdit(scope.$index, scope.row)">编辑
+                        </el-button>
+                        <el-button size="mini" @click="handlePolices(scope.$index, scope.row)" type="info">警员</el-button>
+                        <el-button
+                            size="mini"
+                            type="danger"
+                            @click="handleDelete(scope.$index, scope.row)">删除
+                        </el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <!--  分页  -->
+
+            <paging @emitsizechange="handleSizeChange"
+                    @emitcurrentchange="handleCurrentChange"
+                    :currentPage="tabPage.currentPage"
+                    :pageSizes="tabPage.pageSizes"
+                    :pageSize="tabPage.pageSize"
+                    :total="tabPage.totalNum">
+
+            </paging>
+
+            </el-col>
+
+            <el-col :xs="24" :sm="24" :md="12" :lg="12" v-show="tabSize[3]===12">
+                <police-tab :roleid="policeRoleid" :isloading="policeLoading" @changeList="hideLoading"></police-tab>
+            </el-col>
+        </el-row>
+        <!--dialog-->
+        <el-dialog v-bind:title="formTitle" v-model="dialogInfo" :close-on-click-modal="false" v-on:close="resetForm('ruleForm')" size="tiny">
+            <el-form :model="ruleForm" :rules="this.$validateRule" ref="ruleForm" label-width="110px">
+                <el-form-item label="角色名称" prop="role_name">
+                    <el-input size="small" v-model="ruleForm.role_name"></el-input>
+                </el-form-item>
+                <el-form-item label="角色编码" prop="role_code">
+                    <el-input size="small" v-model="ruleForm.role_code"></el-input>
+                </el-form-item>
+                <el-form-item label="角色类型" prop="role_type">
+                     <el-select size="small" v-model="ruleForm.role_type" placeholder="请选择">
+                        <el-option
+                            v-for="(item,index) in jyjslx"
+                            :label="item.typename"
+                            :value="item.typename"
+                            :key="index">
+                        </el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="备注" prop="remarks">
+                    <el-input size="small" type="textarea" v-model="ruleForm.remarks"></el-input>
+                </el-form-item>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+                <el-button size="mini" @click="dialogInfo=false">取 消</el-button>
+                <el-button size="mini" type="primary" @click="submitForm('ruleForm')">确 定</el-button>
+            </div>
+        </el-dialog>
+        <router-view></router-view>
+    </div>
+</template>
+
+<script>
+    import paging from '../../common/Paging.vue';
+    import policeTab from './police.vue';
+    export default {
+        data(){
+            return {
+                /*****************/
+                dataTree: [],
+                defaultKey:[],
+                defaultProps: {
+                    children: 'children',
+                    label: 'label'
+                },
+                /**************/
+                policeRoleTableData: [],//部门列表数组
+                sels: [],//表格选中列
+                tabPage: {
+                    currentPage: 1,
+                    pageSize: 10,
+                    pageSizes: [10, 20, 30, 50]
+                },//分页信息
+                loading: true,
+                formInline: {//查询表单对象
+                    role_name: ''
+                },
+                dialogInfo: false,//模态框是否显示标识
+                ruleForm: {//新增表单数据
+
+                },
+                formTitle: '',//新增编辑模态框title
+                roleid:'',//角色id
+                policeRoleid:'',//角色id查询用户
+                policeData:[],//所有用户列表
+                defaultKey:[],//绑定的用户列表
+                rolesList:[],//角色下拉
+                jyjslx:[],//警员角色类型下拉
+                btnShow:true,//功能按钮是否显示
+                tabSize:[24,24,24,24],//栅格用户列表
+                policeLoading:false,//右侧加载动画
+            }
+        },
+        created: function () {
+
+        },
+        mounted: function () {
+            this.openScreen();
+            this.getPoliceRoleList();
+            this.jyjslx = this.getDicData('jyjslx');
+        },
+        components: {
+            paging,policeTab
+        },
+        computed: {},
+        methods: {
+            openScreen() {//加载...
+                this.loading = true;
+                setTimeout(() => {
+                    this.loading = false;
+                }, 400);
+            },
+            getDicData(str){//获取数据字典相关内容
+                var dicList = JSON.parse(this.$getStore("gDictionaryList"))
+                var filterarray = $.grep(dicList, function (value) {
+                    return value.typegroupcode === str;//筛选出其中一个，仍为一个数组
+                });
+                if (filterarray.length > 0) {//防止前端报错
+                    return filterarray[0].typeList;
+                }
+            },
+            getPoliceRoleList(params){
+                var _self = this;
+                if (!params) {
+                    var data = {
+                        page: this.tabPage.currentPage,
+                        pageSize: this.tabPage.pageSize,
+                        role_name: this.formInline.role_name
+                    };
+                    params = data;
+                }
+                _self.$http.get('/business/role/getplrolelist', {params: params})
+                    .then(function (res) {
+                        if (res.data && res.data.flag) {
+                            var d = res.data.data;
+                            _self.policeRoleTableData = d.rows;
+                            _self.tabPage.totalNum = d.count;
+                            _self.btnShow = res.data.btnShow;
+                        }
+                    }).catch(function (error) {
+                        if(error){
+                            console.log(error);
+                        }
+
+                });
+            },
+            /**
+             * 查询 根据角色名称模糊查询
+             * @params {String} formName 进行验证
+             */
+            onSearch(formName){
+                var params = this.formInline;
+                params.page = 1;
+                params.pageSize = this.tabPage.pageSize;
+                this.tabPage.currentPage =1;//每次查询默认第一页
+                this.openScreen();
+                this.getPoliceRoleList(params);
+            },
+            /**
+             * 点击新增按钮
+             */
+            handleAdd(){
+                this.dialogInfo = true;
+                this.formTitle = "新增角色信息";
+                this.ruleForm = Object.assign({},{
+                    role_name:'',
+                    role_code:'',
+                    role_type:'交警',
+                    remarks:''
+                });
+            },
+            /**
+             * 保存角色信息
+             * @params {String} formName 用于验证
+             */
+            submitForm(formName){
+                var _self = this;
+                var params = _self.ruleForm;
+                this.$refs[formName].validate(function(valid){
+                    if (valid) {
+                        _self.$http.post('/business/role/saveplrole', params)
+                            .then(function (res) {
+                                if(res.data&&res.data.flag){
+                                    _self.dialogInfo = false;
+                                    _self.$message({
+                                        message: '提交成功',
+                                        type: 'success'
+                                    });
+                                    _self.getPoliceRoleList();
+                                }else{
+                                    _self.$message({
+                                        message:res.data.msg,
+                                        type: 'warning'
+                                    });
+                                }
+                            })
+                            .catch(function (error) {
+                                console.log(error);
+                            });
+                    } else {
+                        console.log('提交错误');
+                        return false;
+                    }
+                });
+            },
+            /**
+             * 表单重置
+             * @params {Object} formName 表单名称
+             */
+            resetForm(formName){
+                this.$refs[formName].resetFields();
+                if(formName=='formInline'){
+                    this.openScreen();
+                    this.getPoliceRoleList()
+                }
+            },
+            /**
+             * 编辑按钮点击事件
+             * @params {Number} index  行号
+             * @params {Object} row 行对象
+             */
+            handleEdit(index, row) {
+                this.dialogInfo = true;
+                this.formTitle = "编辑警员角色信息";
+                this.ruleForm = Object.assign({}, row);
+            },
+            /**
+             * 删除按钮点击事件
+             * @params {Number} index   行号
+             * @params {Object} row     行对象
+             */
+            handleDelete(index, row) {
+                var _self = this;
+                _self.deletePoliceRoleInfo(row);
+            },
+            /**
+             * 批量删除操作
+             */
+            batchRemove(){
+                var _self = this;
+                var arr = _self.sels;
+                if (arr.length > 0) {
+                    _self.deletePoliceRoleInfo({params: arr});
+                } else {
+                    _self.$message({
+                        message: '请勾选警员角色',
+                        type: 'warning'
+                    });
+                }
+
+            },
+            /**
+             * 删除角色信息
+             * @params {Object} row|rows     行对象
+             */
+            deletePoliceRoleInfo(data){
+                var _self = this;
+                this.$confirm('此操作将永久删除选择角色信息, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(function(){
+                    _self.$http.post('/business/role/deleteplroleinfo', data).then(function (res) {
+                        if (res.data && res.data.flag) {
+                            _self.$message({
+                                message: '删除成功',
+                                type: 'success'
+                            });
+                            _self.getPoliceRoleList();
+                        }else{
+                            _self.$message({
+                                message: res.data.msg,
+                                type: 'warning'
+                            });
+                        }
+                    }).catch(function (err) {
+                        console.log(err);
+                    })
+                }).catch(function(err){
+                    console.log(err);
+                });
+            },
+            /**
+             * 更改等级
+             * @param index
+             * @param row
+             */
+            changeLevel(index, row){
+                var _self = this;
+                var role_level = row.role_level == false ? 1 : row.role_level == true ? 0 : 0;
+                var params = {
+                    id: row.id,
+                    role_level: role_level
+                }
+                this.$http.post('/business/role/saveplrole',params).then(function (res) {
+                    if (res.data && res.data.flag) {
+                        _self.$message({
+                            message:res.data.msg,
+                            type: 'success'
+                        });
+
+                    }else{
+                        _self.$message({
+                            message: res.data.msg,
+                            type: 'error'
+                        });
+                    }
+                }).catch(function (err) {
+                     _self.getPoliceRoleList();
+                    _self.$message({
+                        message: '状态更改请求错误',
+                        type: 'error'
+                    });
+                })
+            },
+            /**
+             * 切换每页条数
+             * @params {Number} val 每页条数
+             */
+            handleSizeChange(val) {
+                this.tabPage.pageSize = val;
+                this.getPoliceRoleList();
+            },
+            /**
+             * 切换页码
+             * @params {Number} val 页码
+             */
+            handleCurrentChange(val) {
+                this.tabPage.currentPage = val;
+                this.getPoliceRoleList();
+            },
+            /**
+             * 多选框改变选中事件
+             * @params {Array} val 当前所有选中行对象数组
+             */
+            handleSelectionChange(val) {
+                this.multipleSelection = val;
+                this.sels = val;
+            },
+            handlePolices(index,row){
+                this.tabSize = [24,24,12,12];
+                this.policeRoleid = row.id;
+                this.policeLoading = true;
+            },
+            hideLoading(d){
+                this.policeLoading = d;
+            }
+        }
+    }
+</script>
+
+<style scoped>
+
+
+</style>

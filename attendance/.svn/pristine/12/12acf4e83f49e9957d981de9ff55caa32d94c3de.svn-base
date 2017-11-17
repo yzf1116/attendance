@@ -1,0 +1,142 @@
+/**
+ * Created by DELL on 2017/6/22.
+ */
+var uuid = require('node-uuid');
+var ScheduleModel = db['atd_schedule'];
+var atdGroupModel = db['atd_group'];
+var ScheduleGroupModel = db['atd_schedule_group']
+ScheduleGroupModel.belongsTo(atdGroupModel, {foreignKey: 'groupid'})
+//保存部门信息
+exports.saveScheduleInfo = function (data, callback) {
+    if (data.id) {
+        ScheduleModel.findOne({
+            where: {name: data.name, id: {$notIn: [data.id]}},
+            attributes: ['id']
+        }).then(function (res) {
+            if (res && res.id) {
+                return callback({flag: false, msg: '班组已存在，请确认后重新输入'});
+            } else {
+                ScheduleModel.update(data, {where: {id: data.id}}).then(function (res) {
+                    callback({flag: true})
+                }).catch(function (err) {
+                    if (err) {
+                        callback({flag: false, msg: '修改错误'});
+                    }
+                })
+            }
+        }).catch(function (err) {
+            if (err) {
+                return callback({flag: false, msg: '查询错误'})
+            }
+        })
+
+    } else {
+        data.id = uuid.v1();
+        ScheduleModel.count({where: {name: data.name}}).then(function (res) {
+            if (res && res > 0) {
+                return callback({flag: false, msg: '班组已存在，请确认后重新输入'});
+            } else {
+                ScheduleModel.upsert(data).then(function (res) {
+                    callback({flag: true});
+                }).catch(function (err) {
+                    if (err) {
+                        callback({flag: false, msg: '插入错误'});
+                    }
+                })
+            }
+        }).catch(function (err) {
+            if (err) {
+                return callback({flag: false, msg: '查询错误'});
+            }
+        })
+
+    }
+};
+
+
+//删除部门信息
+exports.delScheduleInfo = function (data, callback) {
+    var where = {};
+    var where2 = {};
+    var arr = [];
+    if (data.params) {
+        var _list = data.params;
+        for (var i in _list) {
+            arr.push(_list[i].id);
+        }
+        where = {id: {$in: arr}};
+        where2 = {scheduleid:{$in:arr}};
+    } else {
+        where = {id: data.id};
+        where2 = {scheduleid:data.id};
+    }
+    ScheduleModel.destroy({where: where}).then(function (res) {
+        ScheduleGroupModel.destroy({where: where2}).then(function (res) {
+            callback({flag: true, msg: '删除成功'});
+        }).catch(function (err) {
+            if (err) {
+                console.log(err);
+                return callback({flag: false, msg: '删除失败'});
+            }
+        })
+    }).catch(function (err) {
+        if (err) {
+            console.log(err);
+            return callback({flag: false, msg: '删除失败'});
+        }
+    })
+
+
+};
+
+//查询部门信息
+exports.getScheduleList = function (data, callback) {
+    data.start = (parseInt(data.page) - 1) * parseInt(data.pageSize);
+    var where = {};
+    if (data.name != undefined) {
+        where = {
+            name: {
+                $like: '%' + data.name + '%'
+            }
+        };
+    }
+    ScheduleModel.findAndCountAll({
+        where: where,
+        limit: parseInt(data.pageSize),
+        offset: parseInt(data.start),
+    }).then(function (res) {
+        callback({flag: true, data: res});
+    }).catch(function (err) {
+        if (err) {
+            console.log(err);
+            return callback({flag: false, data: '查询错误'});
+        }
+    })
+};
+
+//查询部门名称
+exports.getScheduleName = function (data, callback) {
+    ScheduleModel.findAll({attributes: ['id', 'name',]}).then(function (res) {
+        callback({flag: true, data: res});
+    }).catch(function (err) {
+        if (err) {
+            callback({flag: false, data: '查询失败'});
+        }
+    })
+};
+
+exports.getScheduleForGroupList=function (data,callback) {
+    ScheduleGroupModel.count({
+        where:{scheduleid: {$in: data.scheduleList}},
+        attributes: [],
+        include:[
+            {model:atdGroupModel}
+        ]
+    }).then(function (res) {
+        callback({success: true, result: res});
+    }).catch(function (err) {
+        if (err) {
+            callback({success: false, result: '查询失败'});
+        }
+    })
+}

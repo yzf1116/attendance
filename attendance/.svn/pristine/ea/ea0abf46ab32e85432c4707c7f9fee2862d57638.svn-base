@@ -1,0 +1,95 @@
+var path=require('path');
+var excelService = require(path.join(__dirname, '../../../', 'service/common/ExcelService.js'));
+var commonService = require('../../../service/common/commonService');
+module.exports = {
+    get_index: function (req, res) {
+        res.json({data:'index'});
+    },
+    post_downloadmodel: function (req, res) {
+        var table_name=req.body.table_name;
+        excelService.getModel(table_name,function(data){
+            res.send(data);
+        })
+
+    },
+    post_downloadexcel:  function (req, res) {
+        var table_name=req.body.table_name;
+        excelService.getExcelData(table_name,function(data){
+            res.send(data);
+        })
+    },
+    post_uploadexcel:function (req, res) {
+        var table_name=req.body.table_name;
+        var data_arr=req.body.data_arr;
+        var ass_table_obj=req.body.ass_table_obj;
+        excelService.upsertExcelData(table_name,data_arr,ass_table_obj,function(data){
+            res.send(data);
+        })
+    },
+    get_exporttablelist:function (req, res) {
+        var pages = req.query;
+        excelService.exportTableList(pages,function(data){
+            res.send(data);
+        })
+    },
+    post_findexporttablelist:function (req, res) {
+        var pages = req.body;
+        excelService.findExportTableList(pages,function(data){
+            res.send(data);
+        })
+    },
+    post_addorupdateexcel:function (req, res) {
+        var obj = req.body;
+        if ('id' in obj) {
+            commonService.update(db['sys_excel'], obj, function (ret) {
+                res.send(ret);
+            });
+        } else {
+            commonService.save(db['sys_excel'], obj, function (ret) {
+                res.send(ret);
+            });
+        }
+
+
+    },
+    /**
+     * 单条删除和批量删除
+     */
+    post_deleteexcel:function (req, res) {
+    var obj = req.body;
+    if ('ids' in obj) {
+        var ids = obj.ids;
+        var msgStauts = [];
+        for (var i = 0; i < ids.length; i++) {
+            var id = ids[i];
+            commonService.delete(db['sys_excel'], id, function (ret) {
+                if (ret.status === false) {
+                    msgStauts.push(i);
+                }
+            });
+        }
+        if (msgStauts.length == 0) {
+            res.send({status: true, msg: '删除成功'});
+        } else {
+            res.send({status: false, msg: '有' + msgStauts.length + '条数据删除失败'});
+        }
+
+
+    } else {
+        var id = obj.id;
+        commonService.delete(db['sys_excel'], id, function (ret) {
+            res.send(ret);
+        });
+
+    }
+
+
+},
+    //excel树
+
+    get_getexceltreelist: function (req, res) {
+        excelService.getExcelTreeList(req.query,function (ret) {
+            res.send(ret.result);
+        })
+    }
+};

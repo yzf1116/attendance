@@ -1,0 +1,22 @@
+/**
+ * getters
+ * 对于state中数据的过滤，属于一种加强属性
+ * 是action和mutations的一个简化
+ * 一些简单或通用的操作可以抽取到getters上来，方便在应用中引用。
+ * * ****************************************************/
+
+//获取数字
+export const getCount = state => {
+    return state.gcount
+}
+
+//获取字典
+export const getDicList = state => {
+    return state.gDictionaryList
+}
+
+//获取表单数据
+export const getFormDataList = state => {
+    return state.gFormDataList
+}
+

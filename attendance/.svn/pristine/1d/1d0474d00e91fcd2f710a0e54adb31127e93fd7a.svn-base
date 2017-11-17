@@ -1,0 +1,305 @@
+/**
+ * Created on 2017/7/18.
+ */
+const AjaxJson = require('../../utils/AjaxJson');
+const uuid = require('node-uuid');
+const config =require('../../config/baseConfig');
+const serverPath = config.webConfig.defaultServerPath;
+
+const templateModel = db['rev_template'];
+const customModel = db['rev_custom'];
+const personModel = db['pl_person'];
+const approveModel = db['rev_approver_temp'];
+const sendModel = db['rev_send_temp'];
+const applyRecordModel = db['rev_apply'];
+const annexModel = db['sys_annex'];
+
+/**
+ * 获取审批模板列表
+ * @param data {is_use:'1'}
+ * @param callback
+ */
+exports.getTempList = async function (data,callback) {
+    var aj = new AjaxJson();
+    var where = {where:{is_use:"1"},attributes:['template_name','template_code']};
+    try{
+        var temp = await templateModel.findAll(where);
+        aj.result = temp;
+        callback(aj);
+    } catch (err) {
+        console.log(`${err.name} : ${err.message}`);
+        aj.msg = `${err.name}:数据库查询失败`;
+        aj.success = false;
+        callback(aj);
+    }
+}
+
+/**
+ * 获取审批模板信息，包含审批人、抄送人
+ * @param data {template_code:"string"}
+ * @param callback
+ */
+exports.getTempById = async function (data,callback) {
+    var aj = new AjaxJson();
+    var where={where:{template_code:data.template_code},attributes:['id','template_name','template_code','form_items']};
+    var retData = {};
+    var approverList =[];
+    var ccList = [];
+    var where3 = {};
+    try{
+        var temp = await templateModel.findOne(where);
+        if(!temp){
+            aj.success = false;
+            aj.msg = '该审批模板不存在或已被删除';
+            callback(aj);
+        }
+        retData.template_name = temp.template_name;
+        retData.template_code = temp.template_code;
+        retData.formData = JSON.parse(temp.form_items);
+       // console.log(JSON.parse('{"id":3}'));
+        var where1 = {
+            where:{templateid:temp.id}
+        };
+        var sendPerson = await sendModel.findAll(where1);
+        if(sendPerson.length>0){
+            for(var i=0;i<sendPerson.length;i++){//获取抄送人
+                var d = sendPerson[i];
+                var person = await personModel.findOne({where:{id:d.personid}});
+                if(person){
+                    var annex = await annexModel.findOne({where:{businesskey:person.id}});
+                    var p = {id:person.id,police_name:person.police_name,realpath:serverPath + '/upload/image/default.jpg'};
+                    if(annex!=null){
+                        p.realpath = serverPath + "/" + annex.realpath
+                    }
+                    ccList.push(p);
+                }
+            }
+        }
+        var approver = await approveModel.findOne({where:{templateid:temp.id,appr_level:1}});//获取审批人列表 null
+        if(approver){
+            if(approver.approverid==="1"){
+                var where2 = {
+                    where:{id:data.policeid},
+                    attributes:['pl_orgid']
+                };
+                var person1 = await personModel.findOne(where2);//获取部门id
+                if(person1){
+                    where3 = {
+                        where:{pl_orgid:person1.pl_orgid,is_charge:1},
+                        attributes:['id','police_name']
+                    };
+                }
+            }else{
+                where3 = {where:{id:approver.approverid},attributes:['id','police_name']};
+            }
+            var person2 = await personModel.findAll(where3);//审批人
+            if(person2.length>0){
+                for(var j=0;j<person2.length;j++){
+                    var annex2 = await annexModel.findOne({where:{businesskey:person2[j].id}});
+                    var param = {id:person2[j].id,police_name:person2[j].police_name,realpath:serverPath + '/upload/image/default.jpg'};
+                    if(annex2!=null){
+                        param.realpath = serverPath + "/" + annex2.realpath
+                    }
+                    approverList.push(param);
+                }
+            }
+        }
+        retData.ccList = ccList;
+        retData.approverList = approverList;
+        aj.result = retData;
+        callback(aj);
+    } catch (err) {
+        console.log(`${err.name} : ${err.message}`);
+        aj.msg = `${err.name}:数据库查询失败`;
+        aj.success = false;
+        callback(aj);
+    }
+}
+
+// exports.getTempById = async function (data,callback) {
+//     var aj = new AjaxJson();
+//     var where={where:{template_code:data.template_code},attributes:['id','template_name','template_code','form_items']};
+//     var retData = {};
+//     var approverList =[];
+//     var ccList = [];
+//     try{
+//         var temp = await templateModel.findOne(where);
+//         if(!temp){
+//             aj.success = false;
+//             aj.msg = '该审批模板不存在或已被删除';
+//             callback(aj);
+//         }
+//         retData.template_name = temp.template_name;
+//         retData.template_code = temp.template_code;
+//         retData.formData = temp.form_items;
+//         var where1 = {
+//             where:{templateid:temp.id}
+//         };
+//         var sendPerson = await sendModel.findAll(where1);
+//         if(sendPerson.length>0){
+//             for(var i=0;i<sendPerson.length;i++){//获取抄送人
+//                 var d = sendPerson[i];
+//                 var annex = await annexModel.findOne({where:{businesskey:d.id}});
+//                 var p = {id:d.id,police_name:d.police_name,realpath:serverPath + '/upload/image/default.jpg'};
+//                 if(annex!=null){
+//                     p.realpath = serverPath + "/" + annex.realpath
+//                 }
+//                 ccList.push(p);
+//             }
+//         }
+//
+//         var approverid = await approveModel.findAll({where:{templateid:temp.id}});//获取审批人列表
+//         for(var i=0;i<approverid.length;i++){
+//             if(approverid[i].approverid==="1"){
+//                 var where2 = {
+//                     where:{id:data.policeid},
+//                     attributes:['pl_orgid']
+//                 };
+//                 var person1 = await personModel.findOne(where2);
+//                 if(person1){
+//                     var where3 = {
+//                         where:{pl_orgid:person1.pl_orgid,is_charge:1},
+//                         attributes:['id','police_name']
+//                     };
+//                     var person2 = await personModel.findAll(where3);
+//                     if(person2.length>0){
+//                         for(var j=0;j<approverid.length;j++){
+//                             var annex2 = await annexModel.findOne({where:{businesskey:person2[j].id}});
+//                             var param = {id:person2[j].id,name:person2[j].police_name,level:approverid[i].appr_level,realpath:serverPath + '/upload/image/default.jpg'};
+//                             if(annex2!=null){
+//                                 param.realpath = serverPath + "/" + annex2.realpath
+//                             }
+//                             approverList.push(param);
+//                         }
+//                     }
+//                 }
+//             }else{
+//                 var person3 = await personModel.findOne({where:{id:approverid[i].approverid},attributes:['id','police_name']});
+//                 if(person3){
+//                     var annex3 = await annexModel.findOne({where:{businesskey:person3.id}});
+//                     var param = {id:person3.id,name:person3.police_name,level:approverid[i].appr_level,realpath:serverPath + '/upload/image/default.jpg'};
+//                     if(annex3!=null){
+//                         param.realpath = serverPath + "/" + annex3.realpath
+//                     }
+//                     approverList.push(param);
+//                 }
+//             }
+//         }
+//         retData.ccList = ccList;
+//         retData.approverList = approverList;
+//         aj.result = retData;
+//         callback(aj);
+//     } catch (err) {
+//         console.log(`${err.name} : ${err.message}`);
+//         aj.msg = `${err.name}:数据库查询失败`;
+//         aj.success = false;
+//         callback(aj);
+//     }
+// }
+
+/**
+ * 保存请假申请记录
+ * @param data
+ * @param callback
+ */
+exports.saveApplyRecord = async function (data,callback) {
+    var aj = new AjaxJson();
+    data.id = uuid.v1();
+    data.review_code = getRandom();
+    data.create_date = new Date();
+    data.status = '1';
+    try{
+        var d = await applyRecordModel.create(data);
+        if(!d){
+            aj.success = false;
+            aj.msg = '提交失败';
+        }
+        callback(aj);
+    }catch (err) {
+        console.log(`${err.name} : ${err.message}`);
+        aj.msg = `${err.name}:数据库查询失败`;
+        aj.success = false;
+        callback(aj);
+    }
+}
+
+/**
+ * 更新请假申请状态
+ * @param data
+ * @param callback
+ */
+exports.updateLeaveStatus = async function (data,callback) {
+    var aj = new AjaxJson();
+   
+    try{
+        var d = await leaveModel.update();
+        if(!d){
+            aj.success = false;
+            aj.msg = '审批失败';
+            callback(aj);
+        }
+    }catch (err) {
+        console.log(`${err.name} : ${err.message}`);
+        aj.msg = `${err.name}:数据库查询失败`;
+        aj.success = false;
+        callback(aj);
+    }
+}
+
+/**
+ * 请假审批完成更改考勤记录
+ * @param data
+ * @param callback
+ */
+exports.changeAtdRecordByLeave = async function (data,callback) {
+
+    var aj = new AjaxJson();
+
+    try{
+        var d = await punchModel.create(data);
+        if(!d){
+            aj.success = false;
+            aj.msg = '请假申请提交失败';
+            callback(aj);
+        }
+    }catch (err) {
+        console.log(`${err.name} : ${err.message}`);
+        aj.msg = `${err.name}:数据库查询失败`;
+        aj.success = false;
+        callback(aj);
+    }
+}
+
+/**
+ * 保存补卡申请记录
+ * @param data
+ * @param callback
+ */
+exports.saveFillCard = async function (data,callback) {
+    var aj = new AjaxJson();
+    data.id = uuid.v1();
+    data.review_code = getRandom();
+    data.create_date = new Date();
+    try{
+        var d = await fillCardModel.create(data);
+        if(!d){
+            aj.success = false;
+            aj.msg = '请假申请提交失败';
+        }
+        callback(aj);
+    }catch (err) {
+        console.log(`${err.name} : ${err.message}`);
+        aj.msg = `${err.name}:数据库查询失败`;
+        aj.success = false;
+        callback(aj);
+    }
+}
+function getRandom() {
+    var dateStr = new Date().Format('yyyyMMdd');
+    var num1= Math.floor(Math.random()*100000);
+    var num2 = Math.floor(Math.random()*100000);
+    return dateStr+num1+'000'+num2;
+}
+function getPerson(where,callback) {
+
+}

@@ -1,0 +1,354 @@
+<template>
+    <div>
+
+        <div class="tabPosition">
+            <!--查询-->
+            <el-form :inline="true" :model="formInline" class="demo-form-inline" ref="formInline">
+                <el-form-item label="机构名称" prop="departname">
+                    <el-input size="mini" v-model="formInline.departname" placeholder="机构名称"></el-input>
+                </el-form-item>
+                <el-form-item>
+                    <el-button size="mini" type="primary" icon="search" @click="onSearch('formInline')">查询</el-button>
+                    <el-button size="mini" type="info" @click="resetForm('formInline')"><icon name="refresh" class="custom-icon"></icon>重置</el-button>
+                </el-form-item>
+                <el-form-item style="margin-left: 30px">
+                    <el-button size="mini" type="success" icon="plus" @click="handleAdd">新增</el-button>
+                    <el-button size="mini" type="danger" icon="delete" @click="batchRemove">批量删除</el-button>
+                </el-form-item>
+
+            </el-form>
+            <!--表单-->
+            <el-table
+                :data="sysDepartTableData"
+                border
+                v-loading="loading"
+                :height="this.$store.state.gTableHeight"
+                @selection-change="handleSelectionChange"
+                style="width: 100%">
+                <el-table-column
+                    type="selection">
+                </el-table-column>
+                <el-table-column
+                    prop="departname"
+                    label="机构名称"
+                    sortable>
+                </el-table-column>
+                <el-table-column
+                    prop="org_code"
+                    label="组织机构编码"
+                    sortable>
+                </el-table-column>
+                <el-table-column
+                    prop="org_type"
+                    label="组织机构类型">
+                </el-table-column>
+                <el-table-column
+                    prop="description"
+                    label="描述">
+                </el-table-column>
+                <el-table-column label="操作" width="150">
+                    <template scope="scope">
+                        <el-button
+                            size="mini"
+                            type="primary"
+                            @click="handleEdit(scope.$index, scope.row)">编辑
+                        </el-button>
+                        <el-button
+                            size="mini"
+                            type="danger"
+                            @click="handleDelete(scope.$index, scope.row)">删除
+                        </el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <paging @emitsizechange="handleSizeChange"
+                    @emitcurrentchange="handleCurrentChange"
+                    :currentPage="tabPage.currentPage"
+                    :pageSizes="tabPage.pageSizes"
+                    :pageSize="tabPage.pageSize"
+                    :total="tabPage.totalNum">
+            </paging>
+        </div>
+        <!--<div class="treePosition">
+            <rights-Tree :dataTree="dataTree" :defaultKey="defaultKey" :org_id="org_id" @changeDepart="getRoleByDepart"></rights-Tree>
+        </div>-->
+        <!--dialog-->
+        <el-dialog v-bind:title="formTitle" v-model="dialogInfo" :close-on-click-modal="false" v-on:close="resetForm('ruleForm')" size="tiny">
+            <el-form :model="ruleForm" :rules="this.$validateRule" ref="ruleForm" label-width="110px">
+                <el-form-item label="机构名称" prop="departname">
+                    <el-input size="small" v-model="ruleForm.departname"></el-input>
+                </el-form-item>
+                 <!--<el-form-item label="上级机构" prop="parentdepartid">
+                    <el-input v-model="ruleForm.parentdepartid"></el-input>
+                </el-form-item> -->
+                <el-form-item label="组织机构编码" prop="org_code">
+                    <el-input size="small" v-model="ruleForm.org_code"></el-input>
+                </el-form-item>
+                <el-form-item label="组织机构类型" prop="org_type">
+                    <el-select size="small" v-model="ruleForm.org_type" placeholder="请选择">
+                        <el-option v-for="(item,index) in zzjglx" :label="item.typename" :value="item.typename" :key="index">
+                        </el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="描述" prop="description">
+                    <el-input size="small" type="textarea" v-model="ruleForm.description"></el-input>
+                </el-form-item>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+                <el-button size="mini" @click="dialogInfo=false">取 消</el-button>
+                <el-button size="mini" type="primary" @click="submitForm('ruleForm')">确 定</el-button>
+            </div>
+        </el-dialog>
+
+        <router-view></router-view>
+    </div>
+</template>
+
+<script>
+    import paging from '../../common/Paging.vue'
+
+    export default {
+        data(){
+            return {
+                sysDepartTableData: [],//部门列表数组
+                sels: [],//表格选中列
+                tabPage: {
+                    currentPage: 1,
+                    pageSize: 10,
+                    pageSizes: [10, 20, 30, 50]
+                },//分页信息
+                loading: true,
+                formInline: {//查询表单对象
+                    departname: ''
+                },
+                dialogInfo: false,//模态框是否显示标识
+                ruleForm: {},//新增表单数据
+                formTitle: '',//新增编辑模态框title
+                zzjglx:[],//组织机构类型列表
+                defaultProps: {
+                    children: 'children',
+                    label: 'rolename'
+                },
+            }
+        },
+        created: function () {
+
+        },
+        mounted: function () {
+            this.openScreen();
+            this.getSysDepartList();
+            this.zzjglx = this.getDicData('zzjglx');
+        },
+        components: {
+            paging
+        },
+        computed: {},
+        methods: {
+            openScreen() {//加载...
+                this.loading = true;
+                setTimeout(() => {
+                    this.loading = false;
+                }, 400);
+            },
+            getDicData(str){//获取数据字典相关内容
+         var dicList = JSON.parse(this.$getStore("gDictionaryList"))
+                var filterarray = $.grep(dicList,function(value){
+                    return value.typegroupcode===str ;//筛选出其中一个，仍为一个数组
+                });
+                if(filterarray.length>0){//防止前端报错
+                    return filterarray[0].typeList;
+                }
+            },
+            async getSysDepartList(params){
+        var _self = this;
+        var data = {
+            page: this.tabPage.currentPage,
+            pageSize: this.tabPage.pageSize,
+            departname: this.formInline.departname
+        };
+        if (params) {
+            data = params;
+        }
+        this.$http.get('/system/depart/getsysdepartlist', {params: data})
+            .then(function (res) {
+                if (res.data && res.data.flag) {
+                    var d = res.data.data;
+                    _self.sysDepartTableData = d.rows;
+                    _self.tabPage.totalNum = d.count;
+                }
+            }).catch(function (error) {
+            console.log(error)
+        });
+    },
+    /**
+     * 查询 根据机构名称模糊查询
+     * @params {String} formName 进行验证
+     */
+    onSearch(formName){
+        var params = this.formInline;
+        params.page = 1;
+        params.pageSize = this.tabPage.pageSize;
+        this.tabPage.currentPage =1;//每次查询默认第一页
+        var _self = this;
+        _self.openScreen();
+        _self.getSysDepartList(params);
+         
+    },
+    /**
+     * 点击新增按钮
+     */
+    handleAdd(){
+        this.dialogInfo = true;
+        this.formTitle = "新增部门信息";
+        this.ruleForm = Object.assign({}, {
+            departname:'',
+            org_code:'',
+            parentdepartid:'',
+            org_type:undefined,
+            description:''
+        });//初始化
+    },
+    /**
+     * 保存部门信息
+     * @params {String} formName 用于验证
+     */
+    submitForm(formName){
+        var _self = this;
+        var params = _self.ruleForm;
+        this.$refs[formName].validate((valid) => {
+              if (valid) {
+                _self.$http.post('/system/depart/savesysdepartinfo', params)
+                    .then(function (res) {
+                        if(res.data&&res.data.flag){
+                            _self.dialogInfo = false;
+                            _self.$message({
+                                message: '提交成功',
+                                type: 'success'
+                            });
+                            _self.getSysDepartList();
+                        }else{
+                            _self.$message({
+                                message:res.data.msg,
+                                type: 'warning'
+                            });
+                        }
+                    })
+                    .catch(function (error) {
+                        console.log(error);
+                    });
+            } else {
+                console.log('提交错误');
+        return false;
+    }
+    });
+    },
+    /**
+     * 表单重置
+     * @params {Object} formName 表单名称
+     */
+    resetForm(formName){
+        this.$refs[formName].resetFields();
+        if(formName=='formInline'){
+            this.openScreen();
+            this.getSysDepartList();
+        }
+    },
+    /**
+     * 编辑按钮点击事件
+     * @params {Number} index  行号
+     * @params {Object} row 行对象
+     */
+    handleEdit(index, row) {
+        this.dialogInfo = true;
+        this.formTitle = "编辑部门信息";
+        this.ruleForm = Object.assign({}, row);
+    },
+    /**
+     * 删除按钮点击事件
+     * @params {Number} index   行号
+     * @params {Object} row     行对象
+     */
+    handleDelete(index, row) {
+        var _self = this;
+        _self.deleteSysDepartInfo(row);
+    },
+    /**
+     * 删除部门信息
+     * @params {Object} row|rows     行对象
+     */
+    deleteSysDepartInfo(data){
+        var _self = this;
+        this.$confirm('此操作将永久删除选择部门信息, 是否继续?', '提示', {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+        }).then(function(){
+            _self.$http.post('/system/depart/delsysdepartinfo', data).then(function (res) {
+                if (res.data && res.data.flag) {
+                    _self.$message({
+                        message: '删除成功',
+                        type: 'success'
+                    });
+                    _self.getSysDepartList();
+                }else{
+                    _self.$message({
+                        message: res.data.msg,
+                        type: 'warning'
+                    });
+                }
+            }).catch(function (err) {
+                console.log(err);
+            })
+        }).catch(function(err){
+            console.log(err);
+        });
+    },
+    /**
+     * 切换每页条数
+     * @params {Number} val 每页条数
+     */
+    handleSizeChange(val) {
+        this.tabPage.pageSize = val;
+        this.getSysDepartList();
+    },
+    /**
+     * 切换页码
+     * @params {Number} val 页码
+     */
+    handleCurrentChange(val) {
+        this.tabPage.currentPage = val;
+        this.getSysDepartList();
+    },
+    /**
+     * 多选框改变选中事件
+     * @params {Array} val 当前所有选中行对象数组
+     */
+    handleSelectionChange(val) {
+        this.multipleSelection = val;
+        this.sels = val;
+    },
+    /**
+     * 批量删除操作
+     */
+    batchRemove(){
+        var _self = this;
+        var arr = _self.sels;
+        if (arr.length > 0) {
+            _self.deleteSysDepartInfo({params: arr});
+        } else {
+            _self.$message({
+                message: '请选择部门',
+                type: 'warning'
+            });
+        }
+
+    }
+
+    }
+
+    }
+</script>
+
+<style scoped>
+
+</style>

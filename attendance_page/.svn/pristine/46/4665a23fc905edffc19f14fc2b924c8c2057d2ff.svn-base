@@ -1,0 +1,154 @@
+<template>
+  <div>
+    <el-row :gutter="20">
+      <el-col :span="12">
+        <el-input
+          placeholder="输入关键字进行过滤"
+          v-model="filterText">
+        </el-input>
+        <Tree
+          class="filter-tree"
+          :data="data2"
+          node-key="id"
+          :props="defaultProps"
+          @check-change="treeChange"
+          :filter-node-method="filterNode"
+          ref="treeChoose">
+        </Tree>
+      </el-col>
+      <el-col :span="12" class="rightUl">
+        <ul v-if="rightCheckList.length" >
+          <li v-for="(item,index) in rightCheckList">
+            <span> {{ item.label }}</span>
+            <span style="float: right;">
+              <el-button size="mini"  @click="removeNode(item)" type="danger">删除</el-button>
+            </span>
+
+          </li>
+        </ul>
+      </el-col>
+    </el-row>
+  </div>
+</template>
+
+<script>
+  import Tree from './tree'
+  import ElButton from "../../../node_modules/element-ui/packages/button/src/button";
+  export default {
+    data() {
+      return {
+        rightCheckList: [],
+        filterText: '',
+        data2: [{
+          id: 1,
+          label: '一支队',
+          disabled: false,
+          children: [{
+            id: 4,
+            label: '一队一中队',
+            disabled: false,
+          }]
+        }, {
+          id: 2,
+          label: '二支队',
+          disabled: false,
+          children: [{
+            id: 5,
+            label: '二队一中队',
+            disabled: false,
+
+          }, {
+            id: 6,
+            label: '二队二中队',
+            disabled: false,
+
+          }]
+        }, {
+          id: 3,
+          label: '三支队',
+          disabled: false,
+          children: [{
+            id: 7,
+            label: '三队一中队',
+            disabled: false,
+
+          }, {
+            id: 8,
+            label: '三队二中队',
+            disabled: false,
+
+          }]
+        }],
+        defaultProps: {
+          children: 'children',
+          label: 'label',
+          disabled: 'disabled'
+        }
+      }
+    },
+    methods: {
+      filterNode(value, data) {
+        if (!value) return true;
+        return data.label.indexOf(value) !== -1;
+      },
+      treeChange(data, isCheck, childerCheck){
+        const nodeData = this.$refs.treeChoose.getCheckedNodes()
+        this.rightCheckList=nodeData;
+        console.log(data)
+        console.log(isCheck)
+        console.log(childerCheck)
+
+
+//        console.log(this.$refs)
+
+      },
+      removeNode(data){
+          console.log(this)
+//        this.$refs.treeChoose.setCheckedKeys([4])
+        this.$refs.treeChoose.setChecked(data,false,true)
+      }
+    },
+    components: {
+      ElButton, Tree
+    },
+    created() {
+      console.log('created')
+      this.$http.get('/testController/test').then(function (res) {
+        if (res) {
+          console.log(res)
+        }
+      }).catch(function (err) {
+        if (err) {
+          _self.$message({
+            message: '连接错误',
+            type: 'error'
+          })
+        }
+      })
+    },
+    mounted() {
+      console.log('mounted')
+    },
+    updated() {
+      console.log('updated')
+    },
+    watch: {
+      filterText(val) {
+        this.$refs.treeChoose.filter(val);
+      }
+    },
+  }
+</script>
+
+<!-- 添加 "scoped " css作用域只作用于本文件，不作用全局-->
+<style scoped>
+.filter-tree{
+  margin-top: 10px;
+}
+  .rightUl > ul>li{
+list-style: none;
+    margin: 5px;
+    padding: 2px;
+    border-bottom: solid 1px rgba(187, 187, 187,0.5);
+  }
+</style>
